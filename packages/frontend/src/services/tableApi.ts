@@ -1,6 +1,6 @@
 import axios from 'axios';
 // Import từ shared types
-import { type Table,type CreateTableDto,type UpdateTableDto,type UpdateTableStatusDto,type TableQueryDto,type PaginatedTables } from '../../../../shared/types/table';
+import { type Table,type CreateTableDto,type UpdateTableDto,type UpdateTableStatusDto,type TableQueryDto,type PaginatedTables } from '@shared/types/table.d.ts';
 
 // Giả định bạn đã cấu hình proxy trong vite.config.ts để chuyển tiếp /api sang NestJS
 const API_BASE_URL = '/api/tables'; 

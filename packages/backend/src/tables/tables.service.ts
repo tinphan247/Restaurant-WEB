@@ -13,29 +13,44 @@ export class TableService {
   ) {}
 
   // Hàm tìm kiếm có lọc/sắp xếp/phân trang
-  async findAll(query: TableQueryDto): Promise<PaginatedTables> {
+  // HÀM SỬA LỖI 500: Dùng createQueryBuilder
+async findAll(query: TableQueryDto): Promise<PaginatedTables> {
     const { search, location, status, sort = 'tableNumber', order = 'ASC', page = 1, limit = 10 } = query;
     
-    // Điều kiện Soft Delete và lọc cơ bản
-    const where: any = { deletedAt: IsNull() }; 
-    if (location) where.location = location;
-    if (status) where.status = status;
+    // Khởi tạo Query Builder
+    const queryBuilder = this.tablesRepository.createQueryBuilder('table');
 
-    // Điều kiện tìm kiếm (OR tableNumber, OR location)
-    const searchConditions = search ? [
-        { ...where, tableNumber: Like(`%${search}%`) },
-        { ...where, location: Like(`%${search}%`) },
-    ] : [where];
+    // 1. Áp dụng Soft Delete (deletedAt IS NULL) - Luôn luôn là điều kiện AND
+    queryBuilder.where('table.deletedAt IS NULL');
 
-    const [data, total] = await this.tablesRepository.findAndCount({
-        where: searchConditions,
-        order: { [sort]: order },
-        skip: (page - 1) * limit,
-        take: limit,
-    });
+    // 2. Áp dụng các bộ lọc cơ bản (location, status) - Điều kiện AND
+    if (location) {
+        queryBuilder.andWhere('table.location = :location', { location });
+    }
+    if (status) {
+        queryBuilder.andWhere('table.status = :status', { status });
+    }
+
+    // 3. Áp dụng tìm kiếm (search) - Điều kiện OR
+    if (search) {
+        // Sử dụng một OR Group để đảm bảo tìm kiếm OR không xung đột với các điều kiện AND bên trên
+        queryBuilder.andWhere(
+            `(table.tableNumber ILIKE :search OR table.location ILIKE :search)`,
+            { search: `%${search}%` },
+        );
+    }
+
+    // 4. Phân trang
+    queryBuilder
+        .orderBy(`table.${sort}`, order)
+        .skip((page - 1) * limit)
+        .take(limit);
+
+    // 5. Thực thi truy vấn và đếm tổng số
+    const [data, total] = await queryBuilder.getManyAndCount();
     
     return { data, total, page, limit }; 
-  }
+}
 
   async findOne(id: string): Promise<TableEntity> {
     const table = await this.tablesRepository.findOne({ where: { id, deletedAt: IsNull() } });
@@ -58,7 +73,10 @@ export class TableService {
       throw new ConflictException(`Table number "${createTableDto.tableNumber}" already exists.`);
     }
 
-    const newTable = this.tablesRepository.create(createTableDto);
+    const newTable = this.tablesRepository.create({
+            ...createTableDto,
+            status: 'active', // GÁN MẶC ĐỊNH TRƯỚC KHI LƯU
+        });
     return this.tablesRepository.save(newTable);
   }
 

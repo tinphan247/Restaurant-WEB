@@ -9,6 +9,8 @@ export interface Table {
   location: string;
   status: TableStatus;
   qrToken: string | null; // JWT String (do Người 2 quản lý)
+  createdAt: string | Date; // TypeOrm thường trả về Date, JSON trả về string
+  updatedAt: string | Date;
 }
 
 // Data Transfer Objects (DTOs)

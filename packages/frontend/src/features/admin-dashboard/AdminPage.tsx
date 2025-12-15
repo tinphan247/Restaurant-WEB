@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { type Table,type TableQueryDto } from '../../../../../shared/types/table'
+// Sửa lỗi Import: Dùng Alias chuẩn (đã cấu hình trong vite.config.ts)
+import { type Table,type TableQueryDto } from '@shared/types/table.d.ts' 
 import { tableApi } from '../../services/tableApi';
 
-import { FilterBar } from '../admin-dashboard/components/FilterBar';
-import { TableGrid } from '../admin-dashboard/components/TableGrid';
-import { TableForm } from '../admin-dashboard/components/TableForm';
+import { FilterBar } from './components/FilterBar';
+import { TableGrid } from './components/TableGrid';
+import { TableForm } from './components/TableForm';
 
 export const AdminPage: React.FC = () => {
   const [tables, setTables] = useState<Table[]>([]);
@@ -13,9 +14,9 @@ export const AdminPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   
-  // Trạng thái query cho Filter/Pagination
+  // Sửa lỗi: Đặt status là undefined để tải tất cả bàn ban đầu (tránh lọc ẩn)
   const [query, setQuery] = useState<TableQueryDto>({ 
-      status: 'active', 
+      status: undefined, 
       location: undefined, 
       search: undefined, 
       page: 1, 
@@ -28,13 +29,16 @@ export const AdminPage: React.FC = () => {
       const { data, total, page, limit } = await tableApi.getAll(query);
       setTables(data);
       setTotalItems(total);
-      setQuery(prev => ({ ...prev, page, limit }));
+      // SỬA LỖI LOOP: Không cập nhật query trong fetchTables, vì nó là dependency
+      // Dữ liệu page/limit đã được sử dụng từ query để lấy về.
+      // Nếu cần Pagination, bạn sẽ cập nhật page/limit bên ngoài hàm này.
+      // setQuery(prev => ({ ...prev, page, limit })); // Đã xóa dòng này
     } catch (error) {
       console.error("Lỗi khi tải danh sách bàn:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [query]);
+  }, [query]); // Giữ lại [query] là dependency để chạy lại khi filter thay đổi
 
   useEffect(() => {
     fetchTables();
@@ -45,6 +49,7 @@ export const AdminPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  // --- HÀM HÀNH ĐỘNG GIỮ NGUYÊN (SẼ ĐƯỢC GỌI TỪ MODAL) ---
   const handleStatusChange = async (id: string, currentStatus: 'active' | 'inactive') => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     try {
@@ -72,9 +77,18 @@ export const AdminPage: React.FC = () => {
         await tableApi.remove(id);
         alert('Xóa bàn thành công.');
         fetchTables();
+        return Promise.resolve(); // Trả về Promise để TableForm có thể đợi
     } catch (error) {
         alert('Xóa bàn thất bại.');
+        return Promise.reject(error);
     }
+  }
+  // --------------------------------------------------------
+
+  // Hàm được gọi khi TableForm tạo/sửa thành công
+  const handleSuccess = () => {
+    setIsModalOpen(false);
+    fetchTables(); // Tải lại danh sách bàn
   }
 
   return (
@@ -98,9 +112,10 @@ export const AdminPage: React.FC = () => {
         <TableGrid 
           tables={tables} 
           onEdit={(table) => handleOpenModal(table)} 
-          onStatusChange={handleStatusChange}
-          onRegenerateQr={handleRegenerateQr}
-          onDelete={handleDelete}
+          // SỬA LỖI: CHỈ TRUYỀN onEdit. Bỏ 3 props kia theo UX mới
+          // onStatusChange={handleStatusChange}
+          // onRegenerateQr={handleRegenerateQr}
+          // onDelete={handleDelete}
         />
       )}
       
@@ -113,7 +128,11 @@ export const AdminPage: React.FC = () => {
         <TableForm
           table={editingTable}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={fetchTables}
+          onSuccess={handleSuccess}
+          // SỬA LỖI: TRUYỀN CÁC HÀM XỬ LÝ VÀO TABLEFORM
+          onStatusChange={handleStatusChange} 
+          onRegenerateQr={handleRegenerateQr}
+          onDelete={handleDelete}
         />
       )}
     </div>

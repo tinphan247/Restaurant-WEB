@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, Unique, BaseEntity } from 'type
 import { type Table,type TableStatus } from '../../../../shared/types/table' // Import từ shared
 
 @Entity('tables')
-@Unique(['tableNumber']) 
+@Unique(['tableNumber', 'deletedAt']) 
 export class TableEntity extends BaseEntity implements Table {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -60,8 +60,8 @@ async findAll(query: TableQueryDto): Promise<PaginatedTables> {
     return table;
   }
 
-  async create(createTableDto: CreateTableDto): Promise<Table> {
-    // 1. Validate tên bàn duy nhất (không soft deleted)
+ async create(createTableDto: CreateTableDto): Promise<Table> {
+    // 1. Validate tên bàn duy nhất (giữ nguyên)
     const existingTable = await this.tablesRepository.findOne({ 
         where: { 
             tableNumber: createTableDto.tableNumber, 
@@ -73,10 +73,18 @@ async findAll(query: TableQueryDto): Promise<PaginatedTables> {
       throw new ConflictException(`Table number "${createTableDto.tableNumber}" already exists.`);
     }
 
+    // --- KHẮC PHỤC LỖI 500: GÁN TẤT CẢ CÁC GIÁ TRỊ MẶC ĐỊNH BỊ THIẾU ---
+    const now = new Date();
     const newTable = this.tablesRepository.create({
-            ...createTableDto,
-            status: 'active', // GÁN MẶC ĐỊNH TRƯỚC KHI LƯU
-        });
+        ...createTableDto,
+        status: 'active',   // Gán mặc định cho cột NOT NULL
+        qrToken: null,      // Gán NULL tường minh cho cột nullable
+        createdAt: now,     // Gán thời gian hiện tại
+        updatedAt: now,     // Gán thời gian hiện tại
+        deletedAt: null,    // BẮT BUỘC: Gán NULL tường minh cho cột Soft Delete
+    });
+    // -------------------------------------------------------------------
+
     return this.tablesRepository.save(newTable);
   }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { type TableQueryDto } from '@shared/types/table.d.ts';
+import type { TableQueryDto } from '@shared/types/table';
 
 interface FilterBarProps {
     currentQuery: TableQueryDto;

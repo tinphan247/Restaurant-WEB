@@ -1,6 +1,6 @@
 import axios from 'axios';
 // Import từ shared types
-import { type Table,type CreateTableDto,type UpdateTableDto,type UpdateTableStatusDto,type TableQueryDto,type PaginatedTables } from '@shared/types/table.d.ts';
+import type { Table, CreateTableDto, UpdateTableDto, UpdateTableStatusDto, TableQueryDto, PaginatedTables } from '@shared/types/table';
 
 // Giả định bạn đã cấu hình proxy trong vite.config.ts để chuyển tiếp /api sang NestJS
 const API_BASE_URL = '/api/tables'; 
@@ -30,11 +30,16 @@ export const tableApi = {
         await axios.delete(`${API_BASE_URL}/${id}`);
     },
     
-    // ** Tương tác với Người 2 (Giả lập) **
-    regenerateQrToken: async (id: string): Promise<Table> => {
-        // Thực tế: POST /api/qr/regenerate/:id (endpoint của Người 2)
-        // Hiện tại: Giả lập gọi API để đảm bảo luồng code của Người 1 hoạt động
-        const response = await axios.post(`/api/qr/regenerate/${id}`); 
+    // ** API QR Code (Người 2) **
+    // Tạo/Làm mới QR token cho bàn
+    regenerateQrToken: async (id: string): Promise<{ token: string; tableNumber: string }> => {
+        const response = await axios.post(`/api/qr/generate/${id}`); 
         return response.data; 
+    },
+
+    // Verify QR token (dùng cho ScanPage)
+    verifyQrToken: async (token: string): Promise<{ valid: boolean; tableId: string; tableNumber: string; message?: string }> => {
+        const response = await axios.get(`/api/qr/verify`, { params: { token } });
+        return response.data;
     }
 };

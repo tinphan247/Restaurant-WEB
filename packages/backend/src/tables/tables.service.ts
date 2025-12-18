@@ -4,12 +4,14 @@ import { Repository, Not, IsNull, Like } from 'typeorm';
 import { TableEntity } from './table.entity';
 // Import từ shared types
 import { CreateTableDto, UpdateTableDto, UpdateTableStatusDto, TableQueryDto, Table, PaginatedTables } from '../../../../shared/types/table'; 
+import { QrService } from '../qr-auth/qr.service';
 
 @Injectable()
 export class TableService {
   constructor(
     @InjectRepository(TableEntity)
     private tablesRepository: Repository<TableEntity>,
+    private readonly qrService: QrService,
   ) {}
 
   // Hàm tìm kiếm có lọc/sắp xếp/phân trang
@@ -85,7 +87,13 @@ async findAll(query: TableQueryDto): Promise<PaginatedTables> {
     });
     // -------------------------------------------------------------------
 
-    return this.tablesRepository.save(newTable);
+    const savedTable = await this.tablesRepository.save(newTable);
+
+    // Tự động tạo QR token khi thêm bàn mới
+    const { token } = await this.qrService.generateQrCode(savedTable.id);
+    savedTable.qrToken = token;
+
+    return savedTable;
   }
 
   async update(id: string, updateTableDto: UpdateTableDto): Promise<Table> {
@@ -112,6 +120,11 @@ async findAll(query: TableQueryDto): Promise<PaginatedTables> {
   async updateStatus(id: string, updateStatusDto: UpdateTableStatusDto): Promise<Table> {
     const table = await this.findOne(id);
     table.status = updateStatusDto.status;
+
+    // Khi bàn bị inactive => QR không khả dụng (invalidate token hiện tại)
+    if (updateStatusDto.status === 'inactive') {
+      table.qrToken = null;
+    }
     return this.tablesRepository.save(table);
   }
   

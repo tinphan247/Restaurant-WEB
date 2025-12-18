@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 // Sửa lỗi Import: Dùng Alias chuẩn (đã cấu hình trong vite.config.ts)
-import { type Table,type TableQueryDto } from '@shared/types/table.d.ts' 
+import type { Table, TableQueryDto } from '@shared/types/table';
 import { tableApi } from '../../services/tableApi';
 
 import { FilterBar } from './components/FilterBar';
@@ -26,7 +26,7 @@ export const AdminPage: React.FC = () => {
   const fetchTables = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data, total, page, limit } = await tableApi.getAll(query);
+      const { data, total } = await tableApi.getAll(query);
       setTables(data);
       setTotalItems(total);
       // SỬA LỖI LOOP: Không cập nhật query trong fetchTables, vì nó là dependency

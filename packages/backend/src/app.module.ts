@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm'; // [IMPORT CẦN THIẾT]
 import { ConfigModule, ConfigService } from '@nestjs/config'; // [IMPORT CẦN THIẾT]
 import { TablesModule } from './tables/tables.module'; 
+import { QrAuthModule } from './qr-auth/qr-auth.module';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { TablesModule } from './tables/tables.module';
     
     // 3. Các modules của ứng dụng
     TablesModule,
-    // QrAuthModule (Của Người 2),
+    QrAuthModule,
     // ExportsModule (Của Người 3),
   ],
 })

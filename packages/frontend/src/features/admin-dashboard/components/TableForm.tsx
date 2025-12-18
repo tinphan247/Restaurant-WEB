@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 // Sửa lỗi Import: Dùng Alias chuẩn và import type
-import { type Table, type CreateTableDto, type UpdateTableDto } from '@shared/types/table.d.ts'; 
+import type { Table, CreateTableDto, UpdateTableDto } from '@shared/types/table';
 import { tableApi } from '../../../services/tableApi';
 
-// Sửa lỗi: Thêm các handler vào TableFormProps
 interface TableFormProps {
   table: Table | null;
   onClose: () => void;
@@ -14,7 +14,7 @@ interface TableFormProps {
   onDelete: (id: string) => Promise<void>;
 }
 
-export const TableForm: React.FC<TableFormProps> = ({ table, onClose, onSuccess, onStatusChange, onRegenerateQr, onDelete }) => {
+export const TableForm: React.FC<TableFormProps> = ({ table, onClose, onSuccess, onStatusChange, onDelete }) => {
   const isEdit = !!table;
   const [formData, setFormData] = useState<CreateTableDto | UpdateTableDto>({
     tableNumber: table?.tableNumber || '',
@@ -22,6 +22,8 @@ export const TableForm: React.FC<TableFormProps> = ({ table, onClose, onSuccess,
     location: table?.location || '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrToken, setQrToken] = useState<string | null>(null);
 
   // Cập nhật formData khi prop 'table' thay đổi
   useEffect(() => {
@@ -31,8 +33,10 @@ export const TableForm: React.FC<TableFormProps> = ({ table, onClose, onSuccess,
             capacity: table.capacity,
             location: table.location,
         });
+        setQrToken(table.qrToken || null);
     } else {
         setFormData({ tableNumber: '', capacity: 4, location: '' });
+        setQrToken(null);
     }
   }, [table]);
 
@@ -69,6 +73,11 @@ export const TableForm: React.FC<TableFormProps> = ({ table, onClose, onSuccess,
   const handleAction = async (actionType: 'status' | 'qr' | 'delete') => {
         if (!table || isLoading) return;
 
+      if (actionType === 'qr' && table.status !== 'active') {
+        alert('Bàn đang ở trạng thái INACTIVE nên không thể tạo/đổi QR.');
+        return;
+      }
+
         let success = false;
         try {
             setIsLoading(true);
@@ -77,23 +86,33 @@ export const TableForm: React.FC<TableFormProps> = ({ table, onClose, onSuccess,
                 await onStatusChange(table.id, table.status);
                 success = true;
             } else if (actionType === 'qr') {
-                await onRegenerateQr(table.id);
+                const result = await tableApi.regenerateQrToken(table.id);
+                setQrToken(result.token);
+                setShowQrModal(true);
+              onSuccess();
                 success = true;
             } else if (actionType === 'delete') {
                  await onDelete(table.id);
                  success = true;
             }
 
-        } catch (error) {
-            console.error(error);
+          } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || 'Không thể thực hiện thao tác.';
+            alert(`Lỗi: ${errorMessage}`);
         } finally {
             setIsLoading(false);
-            if (success) {
+            if (success && actionType !== 'qr') {
                 onSuccess(); // Refresh danh sách
                 if (actionType === 'delete') onClose(); // Đóng modal nếu xóa
             }
         }
     };
+
+  // Tạo URL đầy đủ cho QR Code
+  const getQrUrl = (token: string) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/menu?token=${token}`;
+  };
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -174,6 +193,56 @@ export const TableForm: React.FC<TableFormProps> = ({ table, onClose, onSuccess,
             </button>
         </div>
       </form>
+
+      {/* MODAL HIỂN THỊ MÃ QR */}
+      {showQrModal && qrToken && table && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60]">
+          <div className="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full text-center">
+            <h3 className="text-xl font-bold mb-2 text-gray-800">Mã QR - Bàn {table.tableNumber}</h3>
+            <p className="text-sm text-gray-500 mb-4">Quét mã này để truy cập menu</p>
+            
+            {/* QR Code */}
+            <div className="bg-white p-4 rounded-lg inline-block border-2 border-gray-100 mb-4">
+              <QRCodeSVG 
+                value={getQrUrl(qrToken)} 
+                size={200}
+                level="H"
+                includeMargin={true}
+              />
+            </div>
+
+            {/* URL hiển thị */}
+            <div className="bg-gray-50 p-3 rounded-lg mb-4 text-left">
+              <p className="text-xs text-gray-500 mb-1">Link truy cập:</p>
+              <p className="text-xs text-blue-600 break-all font-mono">{getQrUrl(qrToken)}</p>
+            </div>
+
+            {/* Nút hành động */}
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(getQrUrl(qrToken));
+                  alert('Đã copy link vào clipboard!');
+                }}
+                className="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+              >
+                📋 Copy Link
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowQrModal(false);
+                  onSuccess();
+                }}
+                className="flex-1 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

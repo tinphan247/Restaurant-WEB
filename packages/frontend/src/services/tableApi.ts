@@ -46,5 +46,11 @@ export const tableApi = {
     verifyQrToken: async (token: string): Promise<{ valid: boolean; tableId: string; tableNumber: string; message?: string }> => {
         const response = await axios.get(`/api/qr/verify`, { params: { token } });
         return response.data;
+    },
+
+    // Regenerate all QR codes (requirement 4.3)
+    regenerateAllQrTokens: async (): Promise<{ message: string; total: number; results: any[] }> => {
+        const response = await axios.post(`/api/qr/regenerate-all`);
+        return response.data;
     }
 };

@@ -22,8 +22,9 @@ export class QrService {
 
     const token = this.qrUtils.generateToken(table.id, table.tableNumber);
     
-    // Lưu token mới vào DB
+    // Lưu token mới vào DB cùng với timestamp tạo
     table.qrToken = token;
+    table.qrTokenCreatedAt = new Date();
     await this.tablesRepository.save(table);
 
     return { token, tableNumber: table.tableNumber };
@@ -49,5 +50,35 @@ export class QrService {
     }
 
     return { valid: true, tableId: table.id, tableNumber: table.tableNumber };
+  }
+
+  // Regenerate all QR codes for all active tables (requirement 4.3)
+  async regenerateAllQrCodes() {
+    const tables = await this.tablesRepository.find({
+      where: {
+        deletedAt: IsNull(),
+        status: 'active',
+      },
+    });
+
+    const results: Array<{ tableId: string; tableNumber: number; success: boolean }> = [];
+    for (const table of tables) {
+      const token = this.qrUtils.generateToken(table.id, table.tableNumber);
+      table.qrToken = token;
+      table.qrTokenCreatedAt = new Date();
+      await this.tablesRepository.save(table);
+
+      results.push({
+        tableId: table.id,
+        tableNumber: table.tableNumber,
+        success: true,
+      });
+    }
+
+    return {
+      message: 'All QR codes regenerated successfully',
+      total: results.length,
+      results,
+    };
   }
 }

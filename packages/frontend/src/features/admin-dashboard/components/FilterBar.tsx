@@ -12,25 +12,25 @@ export const FilterBar: React.FC<FilterBarProps> = ({ currentQuery, onQueryChang
         const { name, value } = e.target;
         onQueryChange(prev => ({ 
             ...prev, 
-            [name]: value === '' ? undefined : value, // Chuyển empty string thành undefined để loại khỏi query
-            page: 1 // Reset về trang 1 khi filter thay đổi
+            [name]: value === '' ? undefined : value, 
+            page: 1 
         }));
     };
 
     return (
-        <div className="filter-bar p-4 border rounded-lg bg-gray-50 mb-4 flex space-x-4">
+        <div className="filter-bar p-3 sm:p-4 border rounded-lg bg-gray-50 mb-4 flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row gap-2 sm:gap-3 lg:gap-4">
             <input 
                 name="search"
                 placeholder="Tìm kiếm số bàn hoặc vị trí..." 
                 value={currentQuery.search || ''} 
                 onChange={handleChange} 
-                className="p-2 border rounded w-1/3"
+                className="p-2 border rounded w-full sm:col-span-2 lg:w-1/3"
             />
             <select 
                 name="status" 
                 value={currentQuery.status || ''} 
                 onChange={handleChange}
-                className="p-2 border rounded"
+                className="p-2 border rounded w-full lg:w-auto"
             >
                 <option value="">Tất cả trạng thái</option>
                 <option value="active">Active</option>
@@ -41,13 +41,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({ currentQuery, onQueryChang
                 placeholder="Lọc theo Vị trí" 
                 value={currentQuery.location || ''} 
                 onChange={handleChange} 
-                className="p-2 border rounded w-1/4"
+                className="p-2 border rounded w-full lg:w-1/4"
             />
             <select 
                 name="sort" 
                 value={currentQuery.sort || ''}
                 onChange={handleChange}
-                className="p-2 border rounded"
+                className="p-2 border rounded w-full lg:w-auto"
             >
                 <option value="">Sắp xếp theo</option>
                 <option value="tableNumber">Số bàn</option>
@@ -58,12 +58,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({ currentQuery, onQueryChang
                 name="order" 
                 value={currentQuery.order || ''}
                 onChange={handleChange}
-                className="p-2 border rounded"
+                className="p-2 border rounded w-full lg:w-auto"
             >
                 <option value="ASC">Tăng dần</option>
                 <option value="DESC">Giảm dần</option>
             </select>
-            {/* Có thể thêm Sort/Order ở đây */}
         </div>
     );
 };

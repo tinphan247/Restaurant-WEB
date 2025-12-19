@@ -10,6 +10,7 @@ export interface Table {
   description?: string; // optional description
   status: TableStatus;
   qrToken: string | null; // JWT String (do Người 2 quản lý)
+  qrTokenCreatedAt?: Date | string | null; // Timestamp khi QR token được tạo
   createdAt: string | Date; // TypeOrm thường trả về Date, JSON trả về string
   updatedAt: string | Date;
 }

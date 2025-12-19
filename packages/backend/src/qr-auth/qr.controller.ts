@@ -18,6 +18,12 @@ export class QrController {
     return this.qrService.generateQrCode(tableId);
   }
 
+  // API cho Admin: Regenerate tất cả QR codes (requirement 4.3)
+  @Post('regenerate-all')
+  async regenerateAll() {
+    return this.qrService.regenerateAllQrCodes();
+  }
+
   // API cho Khách hàng: Verify token khi quét mã
   @Get('verify')
   async verify(@Query('token') token: string) {

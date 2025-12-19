@@ -18,11 +18,11 @@ export class ZipGeneratorService {
 
     archive.pipe(res);
 
-    // Generate full QR URL for each table
+    // Generate full QR URL with both tableId and token for each table (requirement 2.1)
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     for (const table of tables) {
-      const qrUrl = `${baseUrl}/menu?token=${table.qrToken || table.id}`;
+      const qrUrl = `${baseUrl}/menu?table=${table.id}&token=${table.qrToken || ''}`;
       const buffer = await QRCode.toBuffer(qrUrl);
       archive.append(buffer, { name: `Table-${table.tableNumber}.png` });
     }

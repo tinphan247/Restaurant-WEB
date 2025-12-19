@@ -29,4 +29,11 @@ export class ExportController {
     const { data: tables } = await this.tableService.findAll({});
     return this.zipService.generate(tables, res);
   }
+
+  // Download bulk PDF with all QR codes (requirement 3.2)
+  @Get('qr/download-all-pdf')
+  async downloadAllPdf(@Res() res: Response) {
+    const { data: tables } = await this.tableService.findAll({});
+    return this.pdfService.generateBulk(tables, res);
+  }
 }

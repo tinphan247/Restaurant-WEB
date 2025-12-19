@@ -126,16 +126,17 @@ export const TableForm: React.FC<TableFormProps> = ({ table: initialTable, onClo
         return success;
     };
 
-  // Tạo URL đầy đủ cho QR Code
-  const getQrUrl = (token: string) => {
+  // Tạo URL đầy đủ cho QR Code (bao gồm tableId theo yêu cầu)
+  const getQrUrl = (token: string, tableId?: string) => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/menu?token=${token}`;
+    const id = tableId || currentTable?.id || '';
+    return `${baseUrl}/menu?table=${id}&token=${token}`;
   };
   
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-        <h3 className="text-xl font-bold mb-4">{isEdit ? 'Chỉnh Sửa Bàn' : 'Thêm Bàn Mới'}</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <form onSubmit={handleSubmit} className="bg-white p-4 sm:p-6 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">{isEdit ? 'Chỉnh Sửa Bàn' : 'Thêm Bàn Mới'}</h3>
         
         {/* Các Input giữ nguyên */}
         <div className="mb-3">
@@ -167,14 +168,14 @@ export const TableForm: React.FC<TableFormProps> = ({ table: initialTable, onClo
         
         {/* NÚT HÀNH ĐỘNG NÂNG CAO (CHỈ HIỂN THỊ KHI CHỈNH SỬA) */}
         {isEdit && currentTable && (
-            <div className="flex justify-between items-center mb-6 pt-4 border-t mt-4">
-                <h4 className="text-md font-semibold text-gray-700">Hành động:</h4>
-                <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 pt-4 border-t mt-4">
+                <h4 className="text-sm sm:text-md font-semibold text-gray-700">Hành động:</h4>
+                <div className="flex flex-col sm:flex-row gap-2">
                     {/* NÚT XÓA */}
                      <button 
                         type="button" 
                         onClick={() => handleAction('delete')}
-                        className="px-3 py-1 bg-red-100 text-red-600 border border-red-300 text-sm font-medium rounded-lg hover:bg-red-50 transition duration-150" 
+                        className="px-3 py-2 bg-red-100 text-red-600 border border-red-300 text-xs sm:text-sm font-medium rounded-lg hover:bg-red-50 transition duration-150 w-full sm:w-auto" 
                         disabled={isLoading}
                     >
                         Xóa
@@ -184,7 +185,7 @@ export const TableForm: React.FC<TableFormProps> = ({ table: initialTable, onClo
                     <button 
                         type="button" 
                         onClick={() => handleAction('qr')}
-                        className="px-3 py-1 bg-purple-100 text-purple-600 border border-purple-300 text-sm font-medium rounded-lg hover:bg-purple-50 transition duration-150" 
+                        className="px-3 py-2 bg-purple-100 text-purple-600 border border-purple-300 text-xs sm:text-sm font-medium rounded-lg hover:bg-purple-50 transition duration-150 w-full sm:w-auto" 
                         disabled={isLoading}
                     >
                         QR mới
@@ -194,7 +195,7 @@ export const TableForm: React.FC<TableFormProps> = ({ table: initialTable, onClo
                     <button 
                       type="button" 
                       onClick={() => handleAction('status')}
-                      className={`px-3 py-1 text-sm font-medium rounded-lg transition duration-150 ${
+                      className={`px-3 py-2 text-xs sm:text-sm font-medium rounded-lg transition duration-150 w-full sm:w-auto ${
                         currentTable.status === 'active' 
                           ? 'bg-yellow-100 text-yellow-600 border border-yellow-300 hover:bg-yellow-50'
                           : 'bg-green-100 text-green-600 border border-green-300 hover:bg-green-50'
@@ -208,9 +209,9 @@ export const TableForm: React.FC<TableFormProps> = ({ table: initialTable, onClo
         )}
         
         {/* NÚT LƯU VÀ HỦY */}
-        <div className="flex justify-end space-x-3">
-            <button type="button" onClick={onClose} className="bg-gray-300 text-gray-800 p-2 rounded" disabled={isLoading}>Hủy</button>
-            <button type="submit" className="bg-green-500 text-white p-2 rounded" disabled={isLoading}>
+        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
+            <button type="button" onClick={onClose} className="bg-gray-300 text-gray-800 px-4 py-2 rounded w-full sm:w-auto" disabled={isLoading}>Hủy</button>
+            <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded w-full sm:w-auto" disabled={isLoading}>
                 {isLoading ? 'Đang Xử Lý...' : isEdit ? 'Lưu Thay Đổi' : 'Tạo Mới'}
             </button>
         </div>
@@ -218,33 +219,33 @@ export const TableForm: React.FC<TableFormProps> = ({ table: initialTable, onClo
 
       {/* MODAL HIỂN THỊ MÃ QR */}
       {showQrModal && qrToken && currentTable && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60]">
-          <div className="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full text-center">
-            <h3 className="text-xl font-bold mb-2 text-gray-800">Mã QR - Bàn {currentTable.tableNumber}</h3>
-            <p className="text-sm text-gray-500 mb-4">Quét mã này để truy cập menu</p>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-2xl max-w-sm w-full text-center max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg sm:text-xl font-bold mb-2 text-gray-800">Mã QR - Bàn {currentTable.tableNumber}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 mb-4">Quét mã này để truy cập menu</p>
             
             {/* QR Code */}
-            <div className="bg-white p-4 rounded-lg inline-block border-2 border-gray-100 mb-4">
+            <div className="bg-white p-3 sm:p-4 rounded-lg inline-block border-2 border-gray-100 mb-4">
               <QRCodeSVG 
-                value={getQrUrl(qrToken)} 
-                size={200}
+                value={getQrUrl(qrToken, currentTable.id)} 
+                size={window.innerWidth < 640 ? 160 : 200}
                 level="H"
                 includeMargin={true}
               />
             </div>
 
             {/* URL hiển thị */}
-            <div className="bg-gray-50 p-3 rounded-lg mb-4 text-left">
+            <div className="bg-gray-50 p-2 sm:p-3 rounded-lg mb-4 text-left">
               <p className="text-xs text-gray-500 mb-1">Link truy cập:</p>
-              <p className="text-xs text-blue-600 break-all font-mono">{getQrUrl(qrToken)}</p>
+              <p className="text-xs text-blue-600 break-all font-mono">{getQrUrl(qrToken, currentTable.id)}</p>
             </div>
 
             {/* Nút hành động */}
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(getQrUrl(qrToken));
+                  navigator.clipboard.writeText(getQrUrl(qrToken, currentTable.id));
                   alert('Đã copy link vào clipboard!');
                 }}
                 className="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"

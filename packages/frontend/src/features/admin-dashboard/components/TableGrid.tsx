@@ -30,10 +30,10 @@ export const TableGrid: React.FC<TableGridProps> = (props) => {
   const { tables, onEdit } = props;
   const [qrModal, setQrModal] = useState<{ show: boolean; table: Table | null }>({ show: false, table: null });
 
-  // Tạo URL đầy đủ cho QR Code
-  const getQrUrl = (token: string) => {
+  // Tạo URL đầy đủ cho QR Code (bao gồm tableId theo yêu cầu)
+  const getQrUrl = (token: string, tableId?: string) => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/menu?token=${token}`;
+    return `${baseUrl}/menu?table=${tableId || ''}&token=${token}`;
   };
 
   if (tables.length === 0) {
@@ -45,13 +45,14 @@ export const TableGrid: React.FC<TableGridProps> = (props) => {
       <table className="min-w-full bg-white divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số Bàn</th>
-            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sức Chứa</th>
-            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vị Trí</th>
-            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày Tạo</th>
-            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cập Nhật Cuối</th>
-            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+            <th className="py-3 px-2 sm:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số Bàn</th>
+            <th className="py-3 px-2 sm:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sức Chứa</th>
+            <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vị Trí</th>
+            <th className="hidden lg:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày Tạo</th>
+            <th className="hidden xl:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cập Nhật Cuối</th>
+            <th className="py-3 px-2 sm:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+            <th className="hidden sm:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QR</th>
+            <th className="py-3 px-2 sm:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
@@ -63,16 +64,16 @@ export const TableGrid: React.FC<TableGridProps> = (props) => {
               onClick={() => onEdit(table)}
             >
               {/* Các cột hiển thị thông tin giữ nguyên */}
-              <td className="py-3 px-4 whitespace-nowrap font-bold text-gray-800">{table.tableNumber}</td>
-              <td className="py-3 px-4 whitespace-nowrap">{table.capacity}</td>
-              <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-500">{table.location}</td>
-              <td className="py-3 px-4 whitespace-nowrap text-xs text-gray-500">
+              <td className="py-3 px-2 sm:px-4 whitespace-nowrap font-bold text-gray-800">{table.tableNumber}</td>
+              <td className="py-3 px-2 sm:px-4 whitespace-nowrap">{table.capacity}</td>
+              <td className="hidden md:table-cell py-3 px-4 whitespace-nowrap text-sm text-gray-500">{table.location}</td>
+              <td className="hidden lg:table-cell py-3 px-4 whitespace-nowrap text-xs text-gray-500">
                 {formatDate(table.createdAt)}
               </td>
-              <td className="py-3 px-4 whitespace-nowrap text-xs text-gray-500">
+              <td className="hidden xl:table-cell py-3 px-4 whitespace-nowrap text-xs text-gray-500">
                 {formatDate(table.updatedAt)}
               </td>
-              <td className="py-3 px-4 whitespace-nowrap">
+              <td className="py-3 px-2 sm:px-4 whitespace-nowrap">
                 <span
                   className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${table.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}
@@ -80,9 +81,17 @@ export const TableGrid: React.FC<TableGridProps> = (props) => {
                   {table.status.toUpperCase()}
                 </span>
               </td>
+              {/* Trạng thái QR code */}
+              <td className="hidden sm:table-cell py-3 px-4 whitespace-nowrap">
+                <span
+                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${table.qrToken ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}
+                >
+                  {table.qrToken ? 'Có QR' : 'Chưa có'}
+                </span>
+              </td>
               {/* CỘT HÀNH ĐỘNG */}
-              <td className="py-3 px-4 whitespace-nowrap">
-                <div className="flex items-center space-x-2">
+              <td className="py-3 px-2 sm:px-4 whitespace-nowrap">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
@@ -116,31 +125,47 @@ export const TableGrid: React.FC<TableGridProps> = (props) => {
 
       {/* MODAL HIỂN THỊ MÃ QR */}
       {qrModal.show && qrModal.table?.qrToken && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full text-center">
-            <h3 className="text-xl font-bold mb-2 text-gray-800">Mã QR - Bàn {qrModal.table.tableNumber}</h3>
-            <p className="text-sm text-gray-500 mb-4">Quét mã này để truy cập menu</p>
-
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg sm:text-xl font-bold mb-2 text-gray-800 text-center">Mã QR - Bàn {qrModal.table.tableNumber}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 mb-4 text-center">Quét mã này để truy cập menu</p>
             {/* QR Code */}
-            <div className="bg-white p-4 rounded-lg inline-block border-2 border-gray-100 mb-4">
-              <QRCodeDisplay
-                value={getQrUrl(qrModal.table.qrToken)}
-                size={200}
-              />
+            <div className="flex justify-center mb-4">
+              <div className="bg-white p-3 sm:p-4 rounded-lg inline-block border-2 border-gray-100 mb-4 mx-auto">
+                <QRCodeDisplay
+                  value={getQrUrl(qrModal.table.qrToken!, qrModal.table.id)}
+                  size={window.innerWidth < 640 ? 160 : 200}
+                />
+              </div>
             </div>
+            {/* Thông tin QR Token */}
+            {qrModal.table.qrTokenCreatedAt && (
+              <div className="bg-green-50 p-2 sm:p-3 rounded-lg mb-4 text-left border border-green-100 text-xs sm:text-sm">
+                <p className="text-xs text-gray-600">Tạo lúc:</p>
+                <p className="font-semibold text-gray-800">
+                  {new Date(qrModal.table.qrTokenCreatedAt).toLocaleString('vi-VN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            )}
 
             {/* URL hiển thị */}
-            <div className="bg-gray-50 p-3 rounded-lg mb-4 text-left">
-              <p className="text-xs text-gray-500 mb-1">Link truy cập:</p>
-              <p className="text-xs text-blue-600 break-all font-mono">{getQrUrl(qrModal.table.qrToken)}</p>
+            <div className="bg-gray-50 p-2 sm:p-3 rounded-lg mb-4 text-left border border-gray-200">
+              <p className="text-xs text-gray-600 mb-1">Link truy cập:</p>
+              <p className="text-xs text-blue-600 break-all font-mono">{getQrUrl(qrModal.table.qrToken!, qrModal.table.id)}</p>
             </div>
 
             {/* Nút hành động */}
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(getQrUrl(qrModal.table!.qrToken!));
+                  navigator.clipboard.writeText(getQrUrl(qrModal.table!.qrToken!, qrModal.table!.id));
                   alert('Đã copy link vào clipboard!');
                 }}
                 className="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"

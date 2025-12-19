@@ -6,21 +6,14 @@ interface Props {
 }
 
 export const DownloadActions = ({ tableId }: Props) => {
-    const [loadingType, setLoadingType] = useState<'pdf' | 'zip' | null>(null);
+    const [loadingType, setLoadingType] = useState<'pdf' | null>(null);
 
-    const handleDownload = async (type: 'pdf' | 'zip') => {
+    const handleDownload = async () => {
         try {
-            setLoadingType(type);
+            setLoadingType('pdf');
 
-            const isPdf = type === 'pdf';
-            // Use relative URLs to work with Vite proxy
-            const url = isPdf
-                ? `/api/admin/tables/${tableId}/qr/download`
-                : `/api/admin/tables/qr/download-all`;
-
-            const fileName = isPdf
-                ? `Table-${tableId}.pdf`
-                : `All-QR-Codes.zip`;
+            const url = `/api/admin/tables/${tableId}/qr/download`;
+            const fileName = `Table-${tableId}.pdf`;
 
             const response = await fetch(url);
 
@@ -48,22 +41,13 @@ export const DownloadActions = ({ tableId }: Props) => {
     };
 
     return (
-        <div className="flex gap-2 mt-2">
-            <button
-                onClick={() => handleDownload('pdf')}
-                disabled={loadingType !== null}
-                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
-            >
-                {loadingType === 'pdf' ? 'Generating PDF...' : 'Download PDF'}
-            </button>
-
-            <button
-                onClick={() => handleDownload('zip')}
-                disabled={loadingType !== null}
-                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
-            >
-                {loadingType === 'zip' ? 'Compressing...' : 'Download All'}
-            </button>
-        </div>
+        <button
+            onClick={handleDownload}
+            disabled={loadingType !== null}
+            title="Download as PDF (print-ready format)"
+            className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-xs sm:text-sm font-medium transition w-full sm:w-auto flex-1 sm:flex-initial"
+        >
+            {loadingType === 'pdf' ? 'Đang tạo...' : '📄 Tải PDF'}
+        </button>
     );
 };

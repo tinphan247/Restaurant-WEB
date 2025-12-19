@@ -6,6 +6,7 @@ import { tableApi } from '../../services/tableApi';
 import { FilterBar } from './components/FilterBar';
 import { TableGrid } from './components/TableGrid';
 import { TableForm } from './components/TableForm';
+import { BulkDownloadActions } from '../print-tools/components/BulkDownloadActions';
 
 export const AdminPage: React.FC = () => {
   const [tables, setTables] = useState<Table[]>([]);
@@ -54,6 +55,11 @@ export const AdminPage: React.FC = () => {
   // --- HÀM HÀNH ĐỘNG GIỮ NGUYÊN (SẼ ĐƯỢC GỌI TỪ MODAL) ---
   const handleStatusChange = async (id: string, currentStatus: 'active' | 'inactive') => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    // Xác nhận trước khi vô hiệu hóa bàn
+    if (newStatus === 'inactive') {
+      const confirmed = window.confirm('Bạn có chắc chắn muốn vô hiệu hóa bàn này? Bàn sẽ không nhận đơn mới.');
+      if (!confirmed) return;
+    }
     try {
       await tableApi.updateStatus(id, { status: newStatus });
       fetchTables();
@@ -85,6 +91,29 @@ export const AdminPage: React.FC = () => {
         return Promise.reject(error);
     }
   }
+
+  // Regenerate all QR codes (requirement 4.3)
+  const handleRegenerateAllQr = async () => {
+    const confirmed = window.confirm(
+      `⚠️ BẠN CHẮC CHẮN MUỐN TẠO LẠI TẤT CẢ MÃ QR?\n\n` +
+      `Tất cả mã QR cũ sẽ không còn hiệu lực.\n` +
+      `Số bàn sẽ bị ảnh hưởng: ${tables.filter(t => t.status === 'active').length}\n\n` +
+      `Nhấn OK để tiếp tục.`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setIsLoading(true);
+      const result = await tableApi.regenerateAllQrTokens();
+      alert(`✅ Đã tạo lại ${result.total} mã QR thành công!`);
+      fetchTables();
+    } catch (error) {
+      alert('❌ Lỗi khi tạo lại mã QR. Vui lòng thử lại.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // --------------------------------------------------------
 
   // Hàm được gọi khi TableForm tạo/sửa thành công
@@ -94,16 +123,29 @@ export const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Quản Lý Bàn Ăn ({totalItems} bàn)</h2>
+    <div className="p-2 sm:p-4 md:p-6">
+      <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Quản Lý Bàn Ăn ({totalItems} bàn)</h2>
       
-      <div className="flex justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
         <button 
-          className="bg-blue-500 text-white p-2 rounded" 
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition w-full sm:w-auto" 
           onClick={() => handleOpenModal(null)}
         >
           + Thêm Bàn Mới
         </button>
+        
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+          <BulkDownloadActions />
+          
+          <button 
+            className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition disabled:bg-gray-400 w-full sm:w-auto"
+            onClick={handleRegenerateAllQr}
+            disabled={isLoading || tables.filter(t => t.status === 'active').length === 0}
+            title="Tạo lại tất cả mã QR cho các bàn đang hoạt động"
+          >
+            🔄 Tạo Lại Tất Cả QR
+          </button>
+        </div>
       </div>
 
       <FilterBar currentQuery={query} onQueryChange={setQuery} />

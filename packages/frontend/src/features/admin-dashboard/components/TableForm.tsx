@@ -68,7 +68,7 @@ export const TableForm: React.FC<TableFormProps> = ({ table: initialTable, onClo
       const createdTable = await tableApi.create(formData as CreateTableDto);
       alert('Thêm bàn thành công!');
       setCurrentTable(createdTable);
-      const qrCreated = await handleAction('qr', createdTable, false);
+      const qrCreated = await handleAction('qr', createdTable);
       if (qrCreated) {
         onSuccess();
         onClose();
@@ -86,7 +86,6 @@ export const TableForm: React.FC<TableFormProps> = ({ table: initialTable, onClo
   const handleAction = async (
     actionType: 'status' | 'qr' | 'delete',
     targetTable?: Table,
-    showModal = true
   ) => {
         const tableForAction = targetTable ?? currentTable;
         if (!tableForAction || isLoading) return false;
@@ -107,9 +106,7 @@ export const TableForm: React.FC<TableFormProps> = ({ table: initialTable, onClo
                 const result = await tableApi.regenerateQrToken(tableForAction.id);
                 setQrToken(result.token);
                 setCurrentTable(prev => prev && prev.id === tableForAction.id ? { ...prev, qrToken: result.token } : prev);
-                if (showModal) {
-                  setShowQrModal(true);
-                }
+                alert(`Đã tạo lại mã QR cho bàn ${result.tableNumber} thành công!`);
                 success = true;
             } else if (actionType === 'delete') {
                  await onDelete(tableForAction.id);

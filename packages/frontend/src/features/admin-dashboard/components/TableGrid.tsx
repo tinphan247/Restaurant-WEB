@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Table } from '@shared/types/table';
 import { QRCodeDisplay } from '../../print-tools/components/QRCodeDisplay';
 import { DownloadActions } from '../../print-tools/components/DownloadActions';
+import { tableApi } from '../../../services/tableApi';
 
 interface TableGridProps {
   tables: Table[];
@@ -83,9 +84,15 @@ export const TableGrid: React.FC<TableGridProps> = (props) => {
               <td className="py-3 px-4 whitespace-nowrap">
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      setQrModal({ show: true, table });
+                      try {
+                        const latest = await tableApi.getById(table.id);
+                        setQrModal({ show: true, table: latest });
+                      } catch (err) {
+                        console.warn('Failed to fetch latest table, using current row.', err);
+                        setQrModal({ show: true, table });
+                      }
                     }}
                     className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded hover:bg-blue-200 transition"
                   >

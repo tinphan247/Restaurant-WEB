@@ -11,6 +11,11 @@ export const tableApi = {
         return response.data; // Trả về { data, total, page, limit }
     },
 
+    getById: async (id: string): Promise<Table> => {
+        const response = await axios.get(`/api/tables/${id}`);
+        return response.data;
+    },
+
     create: async (data: CreateTableDto): Promise<Table> => {
         const response = await axios.post(API_BASE_URL, data);
         return response.data;

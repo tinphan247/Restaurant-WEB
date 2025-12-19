@@ -7,8 +7,9 @@ export class TableEntity extends BaseEntity implements Table {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'table_number', type: 'int' })
-  tableNumber: number;
+  // Tạm thời cho phép nullable để tránh lỗi migrate khi dữ liệu cũ có null
+  @Column({ name: 'table_number', type: 'int', nullable: true })
+  tableNumber: number | null;
 
   @Column('int')
   capacity: number;

@@ -3,11 +3,30 @@ import { Response } from 'express';
 import * as QRCode from 'qrcode';
 import PDFDocument from 'pdfkit';
 import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class PdfGeneratorService {
+  private getFontPath(): string {
+    // Ưu tiên đường dẫn assets ở root (Vercel)
+    let fontPath = path.join(process.cwd(), 'assets', 'fonts', 'Roboto-Regular.ttf');
+    
+    if (fs.existsSync(fontPath)) return fontPath;
+
+    // Fallback: Thử tìm trong dist/assets (Local build)
+    fontPath = path.join(process.cwd(), 'dist', 'assets', 'fonts', 'Roboto-Regular.ttf');
+    if (fs.existsSync(fontPath)) return fontPath;
+
+    // Fallback: Thử tìm tương đối với file hiện tại (Development)
+    fontPath = path.join(__dirname, '..', '..', '..', '..', 'assets', 'fonts', 'Roboto-Regular.ttf');
+    if (fs.existsSync(fontPath)) return fontPath;
+
+    console.warn('Could not find Roboto-Regular.ttf in any expected location.');
+    return 'Helvetica'; // Fallback font
+  }
+
   async generate(table: any, res: Response) {
-    const fontPath = path.join(process.cwd(), 'assets', 'fonts', 'Roboto-Regular.ttf');
+    const fontPath = this.getFontPath();
 
     // Generate full QR URL with both tableId and token (requirement 2.1)
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -19,10 +38,12 @@ export class PdfGeneratorService {
       margin: 50,
     });
 
-    try {
-      doc.font(fontPath);
-    } catch (e) {
-      console.warn("Font not found, using default:", e.message);
+    if (fontPath !== 'Helvetica') {
+        try {
+            doc.font(fontPath);
+        } catch (e) {
+            console.warn("Error loading font:", e.message);
+        }
     }
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -60,7 +81,7 @@ export class PdfGeneratorService {
 
   // Generate bulk PDF with all tables (requirement 3.2 - Batch Operations)
   async generateBulk(tables: any[], res: Response) {
-    const fontPath = path.join(process.cwd(), 'assets', 'fonts', 'Roboto-Regular.ttf');
+    const fontPath = this.getFontPath();
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     const doc = new PDFDocument({
@@ -68,12 +89,12 @@ export class PdfGeneratorService {
       margin: 20,
     });
 
-    let fontLoaded = false;
-    try {
-      doc.font(fontPath);
-      fontLoaded = true;
-    } catch (e) {
-      console.warn("Font not found, using default:", e.message);
+    if (fontPath !== 'Helvetica') {
+        try {
+            doc.font(fontPath);
+        } catch (e) {
+            console.warn("Error loading font:", e.message);
+        }
     }
 
     res.setHeader('Content-Type', 'application/pdf');

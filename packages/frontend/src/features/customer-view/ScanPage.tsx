@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
 
 import { MenuLoader } from './components/MenuLoader';
 import { ErrorScreen } from './components/ErrorScreen';
 import { MockMenu } from './components/MockMenu';
+import { tableApi } from '../../services/tableApi';
 
 // Kiểu dữ liệu trả về từ API verify
 interface VerifyResponse {
@@ -36,20 +36,18 @@ export const ScanPage: React.FC = () => {
     setStatus('loading');
 
     try {
-      // Gọi API verify của Backend
-      const response = await axios.get<VerifyResponse>('/api/qr/verify', {
-        params: { token }
-      });
+      // Gọi API verify của Backend thông qua tableApi
+      const result = await tableApi.verifyQrToken(token);
 
-      if (response.data.valid) {
+      if (result.valid) {
         setTableInfo({
-          tableId: response.data.tableId,
-          tableNumber: response.data.tableNumber,
+          tableId: result.tableId,
+          tableNumber: result.tableNumber,
         });
         setStatus('success');
       } else {
         setStatus('error');
-        setErrorMessage(response.data.message || 'Mã QR không hợp lệ.');
+        setErrorMessage(result.message || 'Mã QR không hợp lệ.');
       }
     } catch (error: any) {
       setStatus('error');

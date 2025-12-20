@@ -8,14 +8,15 @@ export const BulkDownloadActions = () => {
         try {
             setLoadingType(type);
 
+            const baseUrl = import.meta.env.VITE_API_URL || '';
             let url = '';
             let fileName = '';
 
             if (type === 'bulkPdf') {
-                url = `/api/admin/tables/qr/download-all-pdf`;
+                url = `${baseUrl}/api/admin/tables/qr/download-all-pdf`;
                 fileName = 'All-QR-Codes.pdf';
             } else {
-                url = `/api/admin/tables/qr/download-all`;
+                url = `${baseUrl}/api/admin/tables/qr/download-all`;
                 fileName = 'All-QR-Codes.zip';
             }
 

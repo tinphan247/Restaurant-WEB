@@ -12,7 +12,8 @@ export const DownloadActions = ({ tableId }: Props) => {
         try {
             setLoadingType('pdf');
 
-            const url = `/api/admin/tables/${tableId}/qr/download`;
+            const baseUrl = import.meta.env.VITE_API_URL || '';
+            const url = `${baseUrl}/api/admin/tables/${tableId}/qr/download`;
             const fileName = `Table-${tableId}.pdf`;
 
             const response = await fetch(url);

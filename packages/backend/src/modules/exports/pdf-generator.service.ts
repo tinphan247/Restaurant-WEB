@@ -8,21 +8,28 @@ import * as fs from 'fs';
 @Injectable()
 export class PdfGeneratorService {
   private getFontPath(): string {
-    // Ưu tiên đường dẫn assets ở root (Vercel)
-    let fontPath = path.join(process.cwd(), 'assets', 'fonts', 'Roboto-Regular.ttf');
-    
-    if (fs.existsSync(fontPath)) return fontPath;
+    const possiblePaths = [
+      // 1. Vercel Root (thường là /var/task)
+      path.join(process.cwd(), 'assets', 'fonts', 'Roboto-Regular.ttf'),
+      // 2. Bên trong thư mục dist (nếu build copy vào)
+      path.join(process.cwd(), 'dist', 'assets', 'fonts', 'Roboto-Regular.ttf'),
+      // 3. Tương đối từ file hiện tại (dist/modules/exports/...) đi ra dist/assets
+      path.join(__dirname, '..', '..', '..', 'assets', 'fonts', 'Roboto-Regular.ttf'),
+      // 4. Tương đối từ src (dev environment)
+      path.join(__dirname, '..', '..', '..', '..', 'assets', 'fonts', 'Roboto-Regular.ttf'),
+    ];
 
-    // Fallback: Thử tìm trong dist/assets (Local build)
-    fontPath = path.join(process.cwd(), 'dist', 'assets', 'fonts', 'Roboto-Regular.ttf');
-    if (fs.existsSync(fontPath)) return fontPath;
+    console.log('Searching for font in paths:', possiblePaths);
 
-    // Fallback: Thử tìm tương đối với file hiện tại (Development)
-    fontPath = path.join(__dirname, '..', '..', '..', '..', 'assets', 'fonts', 'Roboto-Regular.ttf');
-    if (fs.existsSync(fontPath)) return fontPath;
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        console.log(`Found font at: ${p}`);
+        return p;
+      }
+    }
 
-    console.warn('Could not find Roboto-Regular.ttf in any expected location.');
-    return 'Helvetica'; // Fallback font
+    console.warn('Could not find Roboto-Regular.ttf. Using Helvetica fallback.');
+    return 'Helvetica'; 
   }
 
   async generate(table: any, res: Response) {

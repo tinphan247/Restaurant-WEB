@@ -43,16 +43,16 @@ export class ModifierService {
     const normalized = this.normalizeMinMax(dto);
     this.validateMinMaxSelections(normalized);
 
-    const group = this.modifierGroupRepo.create({
-      ...dto,
-      ...normalized,
-      restaurantId,
-      isRequired: dto.isRequired ?? false,
-      displayOrder: dto.displayOrder ?? 0,
-      status: dto.status ?? 'active',
-    });
-
-    return await this.modifierGroupRepo.save(group);
+    return await this.modifierGroupRepo.save(
+      this.modifierGroupRepo.create({
+        ...dto,
+        ...normalized,
+        restaurantId,
+        isRequired: dto.isRequired ?? false,
+        displayOrder: dto.displayOrder ?? 0,
+        status: dto.status ?? 'active',
+      }),
+    );
   }
 
   /**
@@ -103,28 +103,27 @@ export class ModifierService {
     groupId: string,
     restaurantId: string,
   ): Promise<void> {
-    const group = await this.modifierGroupRepo.findOne({ where: { id: groupId, restaurantId } });
-
-    if (!group) {
-      throw new NotFoundException(`Modifier group với ID ${groupId} không tồn tại`);
-    }
-
     // Gỡ link item-group trước để tránh orphan
     await this.itemModifierRepo.delete({ modifierGroupId: groupId });
 
-    // Xóa group (options sẽ bị xóa do onDelete cascade ở relation option->group)
-    await this.modifierGroupRepo.remove(group);
+    // Xóa bằng điều kiện để tránh load entity
+    const result = await this.modifierGroupRepo.delete({ id: groupId, restaurantId });
+    if (result.affected === 0) {
+      throw new NotFoundException(`Modifier group với ID ${groupId} không tồn tại`);
+    }
   }
 
   /**
    * Lấy tất cả Modifier Groups của restaurant
    */
   async getAllModifierGroups(restaurantId: string): Promise<ModifierGroupEntity[]> {
-    return await this.modifierGroupRepo.find({
-      where: { restaurantId },
-      relations: ['options'],
-      order: { displayOrder: 'ASC', createdAt: 'DESC' },
-    });
+    return await this.modifierGroupRepo
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.options', 'option')
+      .where('group.restaurantId = :restaurantId', { restaurantId })
+      .orderBy('group.displayOrder', 'ASC')
+      .addOrderBy('group.createdAt', 'DESC')
+      .getMany();
   }
 
   /**
@@ -137,6 +136,19 @@ export class ModifierService {
     const group = await this.modifierGroupRepo.findOne({
       where: { id: groupId, restaurantId },
       relations: ['options'],
+      select: {
+        id: true,
+        restaurantId: true,
+        name: true,
+        selectionType: true,
+        isRequired: true,
+        minSelections: true,
+        maxSelections: true,
+        displayOrder: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     if (!group) {
@@ -154,17 +166,20 @@ export class ModifierService {
     restaurantId: string,
     dto: CreateModifierOptionDto,
   ): Promise<ModifierOptionEntity> {
-    // Verify group exists và thuộc restaurant
-    const group = await this.getModifierGroupById(groupId, restaurantId);
+    // Verify group tồn tại & thuộc restaurant (nhẹ, chỉ select id)
+    const exists = await this.modifierGroupRepo.exist({ where: { id: groupId, restaurantId } });
+    if (!exists) {
+      throw new NotFoundException(`Modifier group với ID ${groupId} không tồn tại`);
+    }
 
-    const option = this.modifierOptionRepo.create({
-      ...dto,
-      groupId,
-      priceAdjustment: dto.priceAdjustment ?? 0,
-      status: dto.status ?? 'active',
-    });
-
-    return await this.modifierOptionRepo.save(option);
+    return await this.modifierOptionRepo.save(
+      this.modifierOptionRepo.create({
+        ...dto,
+        groupId,
+        priceAdjustment: dto.priceAdjustment ?? 0,
+        status: dto.status ?? 'active',
+      }),
+    );
   }
 
   /**
@@ -175,17 +190,14 @@ export class ModifierService {
     restaurantId: string,
     dto: UpdateModifierOptionDto,
   ): Promise<ModifierOptionEntity> {
-    const option = await this.modifierOptionRepo.findOne({
-      where: { id: optionId },
-      relations: ['group'],
-    });
+    const option = await this.modifierOptionRepo
+      .createQueryBuilder('option')
+      .leftJoinAndSelect('option.group', 'group')
+      .where('option.id = :optionId', { optionId })
+      .andWhere('group.restaurantId = :restaurantId', { restaurantId })
+      .getOne();
 
     if (!option) {
-      throw new NotFoundException(`Modifier option với ID ${optionId} không tồn tại`);
-    }
-
-    // Verify option thuộc restaurant (qua group)
-    if (!option.group || option.group.restaurantId !== restaurantId) {
       throw new NotFoundException(`Modifier option với ID ${optionId} không tồn tại`);
     }
 
@@ -202,45 +214,35 @@ export class ModifierService {
     restaurantId: string,
     dto: AttachModifierGroupsDto,
   ): Promise<void> {
-    // Verify item exists và thuộc restaurant
-    const item = await this.menuItemRepo.findOne({
-      where: { id: itemId, restaurantId },
-    });
-
-    if (!item) {
+    // Verify item exists & belongs to restaurant
+    const itemExists = await this.menuItemRepo.exist({ where: { id: itemId, restaurantId } });
+    if (!itemExists) {
       throw new NotFoundException(`Menu item với ID ${itemId} không tồn tại`);
     }
 
-    // Verify tất cả groups tồn tại và thuộc restaurant
-    const groups = await this.modifierGroupRepo.find({
-      where: { 
-        id: In(dto.modifierGroupIds),
-        restaurantId,
-      },
-    });
-
-    if (groups.length !== dto.modifierGroupIds.length) {
+    // Verify groups thuộc restaurant bằng COUNT thay vì fetch toàn bộ
+    const count = await this.modifierGroupRepo.count({ where: { id: In(dto.modifierGroupIds), restaurantId } });
+    if (count !== dto.modifierGroupIds.length) {
       throw new BadRequestException({
         code: 'VALIDATION_ERROR',
         message: 'Một số modifier group không hợp lệ',
-        errors: {
-          modifierGroupIds: ['Một hoặc nhiều modifier group không tồn tại hoặc không thuộc restaurant này'],
-        },
+        errors: { modifierGroupIds: ['Một hoặc nhiều modifier group không tồn tại hoặc không thuộc restaurant này'] },
       });
     }
 
-    // Xóa các liên kết cũ
-    await this.itemModifierRepo.delete({ menuItemId: itemId });
+    // Transaction: clear old links, insert new in batch
+    await this.itemModifierRepo.manager.transaction(async tm => {
+      await tm.delete(MenuItemModifierGroupEntity, { menuItemId: itemId });
 
-    // Tạo liên kết mới
-    const links = dto.modifierGroupIds.map(groupId =>
-      this.itemModifierRepo.create({
-        menuItemId: itemId,
-        modifierGroupId: groupId,
-      }),
-    );
-
-    await this.itemModifierRepo.save(links);
+      if (dto.modifierGroupIds.length > 0) {
+        await tm
+          .createQueryBuilder()
+          .insert()
+          .into(MenuItemModifierGroupEntity)
+          .values(dto.modifierGroupIds.map(groupId => ({ menuItemId: itemId, modifierGroupId: groupId })))
+          .execute();
+      }
+    });
   }
 
   /**
@@ -296,44 +298,33 @@ export class ModifierService {
     maxSelections?: number | null;
   }): void {
     const { selectionType, minSelections, maxSelections } = dto;
+    if (selectionType === 'single') return;
 
-    if (selectionType === 'single') {
-      return;
+    if (minSelections != null && maxSelections != null && minSelections > maxSelections) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'minSelections không được lớn hơn maxSelections',
+        errors: {
+          minSelections: ['minSelections phải <= maxSelections'],
+          maxSelections: ['maxSelections phải >= minSelections'],
+        },
+      });
     }
 
-    if (selectionType === 'multiple') {
-      if (minSelections !== null && maxSelections !== null && minSelections !== undefined && maxSelections !== undefined) {
-        if (minSelections > maxSelections) {
-          throw new BadRequestException({
-            code: 'VALIDATION_ERROR',
-            message: 'minSelections không được lớn hơn maxSelections',
-            errors: {
-              minSelections: ['minSelections phải <= maxSelections'],
-              maxSelections: ['maxSelections phải >= minSelections'],
-            },
-          });
-        }
-      }
+    if (minSelections != null && minSelections < 0) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'minSelections phải >= 0',
+        errors: { minSelections: ['minSelections phải >= 0'] },
+      });
+    }
 
-      if (minSelections !== null && minSelections !== undefined && minSelections < 0) {
-        throw new BadRequestException({
-          code: 'VALIDATION_ERROR',
-          message: 'minSelections phải >= 0',
-          errors: {
-            minSelections: ['minSelections phải >= 0'],
-          },
-        });
-      }
-
-      if (maxSelections !== null && maxSelections !== undefined && maxSelections < 1) {
-        throw new BadRequestException({
-          code: 'VALIDATION_ERROR',
-          message: 'maxSelections phải >= 1',
-          errors: {
-            maxSelections: ['maxSelections phải >= 1'],
-          },
-        });
-      }
+    if (maxSelections != null && maxSelections < 1) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'maxSelections phải >= 1',
+        errors: { maxSelections: ['maxSelections phải >= 1'] },
+      });
     }
   }
 
@@ -352,10 +343,10 @@ export class ModifierService {
       return { ...dto, minSelections: undefined, maxSelections: undefined } as T;
     }
 
-    // multiple
-    const min = dto.minSelections ?? (dto.isRequired ? 1 : undefined);
-    const max = dto.maxSelections ?? undefined;
-
-    return { ...dto, minSelections: min, maxSelections: max } as T;
+    return {
+      ...dto,
+      minSelections: dto.minSelections ?? (dto.isRequired ? 1 : undefined),
+      maxSelections: dto.maxSelections ?? undefined,
+    } as T;
   }
 }

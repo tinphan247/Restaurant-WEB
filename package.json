@@ -2,6 +2,7 @@
   "dependencies": {
     "archiver": "^7.0.1",
     "file-saver": "^2.0.5",
+    "lucide-react": "^0.562.0",
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
     "react-hook-form": "^7.69.0",

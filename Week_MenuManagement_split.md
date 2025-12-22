@@ -570,6 +570,13 @@ backend/
         ├── categories.module.ts        # NestJS module config
         └── __tests__/
             └── categories.service.spec.ts
+      menu-item-photos/
+        ├── menu-item-photo.entity.ts  # MenuItemPhoto entity (isPrimary, url)
+        ├── photos.controller.ts       # POST upload, DELETE, PATCH set-primary
+        ├── photos.service.ts          # Upload handler, validation (MIME, size), random filename
+        ├── photos.module.ts           # NestJS module, multer config
+        └── __tests__/
+            └── photos.service.spec.ts
   test/
     └── categories.e2e-spec.ts         # E2E: create/list/update/filter/sort/deactivate
 
@@ -582,6 +589,10 @@ frontend/
           ├── CategoryList.tsx          # List categories with sort/filter
           ├── CategoryForm.tsx          # Create/Update form
           └── CategoryManagement.tsx    # Main component
+          admin-menu-media/
+          ├── PhotoUpload.tsx           # Multi-file upload, drag-drop
+          ├── PhotoList.tsx             # Display photos, set primary, remove
+          └── PhotoManager.tsx          # Main component
 ```
 
 ## Người 2: Menu Items CRUD + List (filter/sort/paging) + Business Rules
@@ -636,13 +647,6 @@ Person 3 (Photos, Modifiers, Guest Menu):
 backend/
   src/
     modules/
-      menu-item-photos/
-        ├── menu-item-photo.entity.ts  # MenuItemPhoto entity (isPrimary, url)
-        ├── photos.controller.ts       # POST upload, DELETE, PATCH set-primary
-        ├── photos.service.ts          # Upload handler, validation (MIME, size), random filename
-        ├── photos.module.ts           # NestJS module, multer config
-        └── __tests__/
-            └── photos.service.spec.ts
       modifiers/
         ├── modifier-group.entity.ts   # ModifierGroup entity
         ├── modifier-option.entity.ts  # ModifierOption entity
@@ -669,10 +673,6 @@ frontend/
       ├── menuMediaApi.ts             # API client for photo upload/delete/primary
       └── modifierApi.ts              # API client for modifiers
     features/
-      admin-menu-media/
-        ├── PhotoUpload.tsx           # Multi-file upload, drag-drop
-        ├── PhotoList.tsx             # Display photos, set primary, remove
-        └── PhotoManager.tsx          # Main component
       admin-modifiers/
         ├── ModifierGroupForm.tsx     # Create/Update modifier groups
         ├── ModifierOptionForm.tsx    # Create/Update options

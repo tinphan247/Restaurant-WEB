@@ -5,6 +5,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { TablesModule } from './tables/tables.module';
 import { QrAuthModule } from './qr-auth/qr-auth.module';
 import { ExportsModule } from './modules/exports/exports.module';
+import { GuestMenuModule } from './modules/guest-menu/guest-menu.module';
+import { ModifierModule } from './modules/modifiers/modifiers.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { ExportsModule } from './modules/exports/exports.module';
     TablesModule,
     QrAuthModule,
     ExportsModule,
+    GuestMenuModule,
+    ModifierModule,
   ],
 })
 export class AppModule {}

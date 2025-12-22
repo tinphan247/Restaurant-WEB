@@ -6,7 +6,7 @@ interface MockMenuProps {
 }
 
 // Dữ liệu menu giả để hiển thị
-const mockMenuItems = [
+export const mockMenuItems = [
   {
     id: '1',
     category: 'Khai vị',

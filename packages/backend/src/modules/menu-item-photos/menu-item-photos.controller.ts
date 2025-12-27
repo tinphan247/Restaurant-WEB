@@ -1,16 +1,16 @@
 import { Controller, Post, Param, UploadedFiles, UseInterceptors, Get, Delete } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { existsSync, mkdirSync } from 'fs';
-// 1. Nhớ import Service vào
+import { memoryStorage } from 'multer';
+import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
 import { MenuItemPhotosService } from './menu-item-photos.service'; 
 
 @Controller('admin/menu/items/:itemId/photos')
 export class MenuItemPhotosController {
   
-  // 2. PHẢI CÓ CONSTRUCTOR NÀY
-  constructor(private readonly photosService: MenuItemPhotosService) {}
+  constructor(
+    private readonly photosService: MenuItemPhotosService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Get()
   async findAll(@Param('itemId') itemId: string) {
@@ -19,23 +19,7 @@ export class MenuItemPhotosController {
 
   @Post()
   @UseInterceptors(FilesInterceptor('files', 10, {
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        // Trên Vercel (Serverless), không được ghi vào root, chỉ được ghi vào /tmp
-        const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
-        const uploadPath = isProduction ? '/tmp' : './uploads/menu-items';
-
-        if (!isProduction && !existsSync(uploadPath)) {
-          mkdirSync(uploadPath, { recursive: true });
-        }
-        
-        cb(null, uploadPath);
-      },
-      filename: (req, file, cb) => {
-        const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-        cb(null, `${randomName}${extname(file.originalname)}`);
-      },
-    }),
+    storage: memoryStorage(), // Use memory storage to get file buffer
     fileFilter: (req, file, cb) => {
       if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
         return cb(new Error('Chỉ chấp nhận file ảnh!'), false);
@@ -45,19 +29,23 @@ export class MenuItemPhotosController {
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB
   }))
   async uploadPhotos(@Param('itemId') itemId: string, @UploadedFiles() files: Express.Multer.File[]) {
-    // 3. Bây giờ this.photosService sẽ không còn lỗi nữa
     const photos = await Promise.all(
-      files.map(file => 
-        this.photosService.create({
+      files.map(async (file) => {
+        // Upload to Cloudinary
+        const result = await this.cloudinaryService.uploadFile(file);
+        
+        // Save to DB with Cloudinary URL
+        return this.photosService.create({
           menuItemId: itemId,
-          url: `/uploads/menu-items/${file.filename}`,
+          url: result.secure_url, // Use the secure URL from Cloudinary
           isPrimary: false
-        })
-      )
+        });
+      })
     );
     
     return { itemId, uploadedCount: files.length, photos };
   }
+  
   // Xóa ảnh theo id
   @Delete(':photoId')
   async removePhoto(@Param('photoId') photoId: string) {

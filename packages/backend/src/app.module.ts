@@ -44,7 +44,9 @@ import { MenuItemModifierGroupEntity } from './modules/modifiers/entities/menu-i
           ModifierOptionEntity,
           MenuItemModifierGroupEntity,
         ],
-        synchronize: false, // Disable synchronize in production/serverless
+        // Tự động tạo bảng nếu chưa có (chỉ nên dùng khi mới deploy hoặc dev)
+        // Set biến môi trường DB_SYNC=true trên Vercel để kích hoạt
+        synchronize: config.get<string>('DB_SYNC') === 'true', 
         ssl: true, // Force SSL for Neon/Cloud DB
         extra: {
           ssl: {

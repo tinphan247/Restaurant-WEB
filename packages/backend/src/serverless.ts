@@ -16,14 +16,8 @@ async function bootstrap() {
 
       // Enable CORS for Vercel Frontend
       app.enableCors({
-        origin: [
-          process.env.FRONTEND_URL,
-          'https://restaurant-web-2t3m.vercel.app',
-          'https://restaurant-web-five-wine.vercel.app',
-          'http://localhost:5173',
-          'http://localhost:3000'
-        ].filter(Boolean) as string[],
-        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        origin: true, // Allow all origins temporarily to fix CORS issues
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         credentials: true,
       });
 

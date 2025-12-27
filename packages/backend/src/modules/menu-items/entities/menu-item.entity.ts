@@ -1,9 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, ManyToMany, JoinTable, OneToMany, BaseEntity } from 'typeorm';
 import type { MenuItem as IMenuItem, MenuItemStatus } from '../../../../../../shared/types/menu';
-import { MenuCategoryEntity } from '../../menu-categories/entities/menu-category.entity';
-import { ModifierGroupEntity } from '../../modifiers/entities/modifier-group.entity';
-import { MenuItemModifierGroupEntity } from '../../modifiers/entities/menu-item-modifier-group.entity';
-import { MenuItemPhotoEntity } from '../../menu-item-photos/entities/menu-item-photo.entity';
+import type { MenuCategoryEntity } from '../../menu-categories/entities/menu-category.entity';
+import type { ModifierGroupEntity } from '../../modifiers/entities/modifier-group.entity';
+import type { MenuItemModifierGroupEntity } from '../../modifiers/entities/menu-item-modifier-group.entity';
+import type { MenuItemPhotoEntity } from '../../menu-item-photos/entities/menu-item-photo.entity';
 
 /**
  * Entity cho Menu Item (tạm thời cho Người 3, Người 2 sẽ hoàn thiện)
@@ -52,14 +52,14 @@ export class MenuItemEntity extends BaseEntity implements IMenuItem {
   primaryPhotoUrl?: string | null;
 
   // Relations
-  @ManyToOne(() => MenuCategoryEntity, category => category.items)
+  @ManyToOne('MenuCategoryEntity', (category: MenuCategoryEntity) => category.items)
   @JoinColumn({ name: 'category_id' })
   category?: MenuCategoryEntity;
 
-  @OneToMany(() => MenuItemPhotoEntity, photo => photo.menuItem)
+  @OneToMany('MenuItemPhotoEntity', (photo: MenuItemPhotoEntity) => photo.menuItem)
   photos?: MenuItemPhotoEntity[];
 
-  @ManyToMany(() => ModifierGroupEntity, group => group.menuItems)
+  @ManyToMany('ModifierGroupEntity', (group: ModifierGroupEntity) => group.menuItems)
   @JoinTable({
     name: 'menu_item_modifier_groups',
     joinColumn: { name: 'menu_item_id', referencedColumnName: 'id' },

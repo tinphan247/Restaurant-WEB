@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, BaseEntity,DeleteDateColumn } from 'typeorm';
 import type { MenuCategory as IMenuCategory, CategoryStatus } from '../../../../../../shared/types/menu';
-import { MenuItemEntity } from '../../menu-items/entities/menu-item.entity';
+import type { MenuItemEntity } from '../../menu-items/entities/menu-item.entity';
 
 /**
  * Entity cho Menu Category (tạm thời cho Người 3, Người 1 sẽ hoàn thiện)
@@ -37,7 +37,7 @@ export class MenuCategoryEntity extends BaseEntity implements IMenuCategory {
   itemCount?: number;
 
   // Relations
-  @OneToMany(() => MenuItemEntity, item => item.category)
+  @OneToMany('MenuItemEntity', (item: MenuItemEntity) => item.category)
   items?: MenuItemEntity[];
 
   @CreateDateColumn({ name: 'created_at' })

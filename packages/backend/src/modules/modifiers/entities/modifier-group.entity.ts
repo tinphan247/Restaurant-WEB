@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, BaseEntity } from 'typeorm';
 import type { ModifierGroup as IModifierGroup, ModifierGroupSelectionType, ModifierStatus } from '../../../../../../shared/types/menu';
 import * as Modifiers from './modifier-option.entity';
-import * as MenuItems from '../../menu-items/entities/menu-item.entity';
+import type * as MenuItems from '../../menu-items/entities/menu-item.entity';
 
 /**
  * Entity cho Modifier Group
@@ -57,7 +57,7 @@ export class ModifierGroupEntity extends BaseEntity implements IModifierGroup {
   options?: Modifiers.ModifierOptionEntity[];
 
   // Relation với MenuItem (Many-to-Many)
-  @ManyToMany(() => MenuItems.MenuItemEntity, item => item.modifierGroups)
+  @ManyToMany('MenuItemEntity', (item: MenuItems.MenuItemEntity) => item.modifierGroups)
   menuItems?: MenuItems.MenuItemEntity[];
 
   @CreateDateColumn({ name: 'created_at' })

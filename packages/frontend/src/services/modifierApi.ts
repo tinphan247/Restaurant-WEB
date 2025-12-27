@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://restaurant-web-five-wine.vercel.app';
-const API_BASE_URL = `${BASE_URL}/api/admin/menu/modifier-groups`;
+const API_BASE_URL = `${BASE_URL}`;
 
 // Mock storage for development
 const mockStorage = {

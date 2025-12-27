@@ -1,4 +1,4 @@
-import { Controller, Post, Param, UploadedFiles, UseInterceptors, Get, Delete } from '@nestjs/common';
+import { Controller, Post, Param, UploadedFiles, UseInterceptors, Get, Delete, HttpException, HttpStatus } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
@@ -32,7 +32,7 @@ export class MenuItemPhotosController {
     console.log(`Received upload request for item ${itemId}. Files count: ${files?.length}`);
     
     if (!files || files.length === 0) {
-      throw new Error('No files uploaded');
+      throw new HttpException('No files uploaded', HttpStatus.BAD_REQUEST);
     }
 
     try {
@@ -55,7 +55,12 @@ export class MenuItemPhotosController {
       return { itemId, uploadedCount: files.length, photos };
     } catch (error) {
       console.error('Upload failed:', error);
-      throw new Error(`Upload failed: ${error.message || error}`);
+      // Return specific error message to frontend
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: 'Upload failed',
+        message: error.message || 'Unknown error during upload',
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
   

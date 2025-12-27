@@ -23,9 +23,14 @@ export class CloudinaryService {
   }
 
   uploadFile(file: Express.Multer.File): Promise<any> {
+    // Check config before attempting upload
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      return Promise.reject(new Error('MISSING_CLOUDINARY_CREDENTIALS: Please add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to Vercel Environment Variables.'));
+    }
+
     return new Promise((resolve, reject) => {
       if (!file || !file.buffer) {
-        return reject(new Error('File buffer is missing'));
+        return reject(new Error('FILE_BUFFER_MISSING: The uploaded file has no content.'));
       }
 
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -35,7 +40,7 @@ export class CloudinaryService {
         (error, result) => {
           if (error) {
             console.error('Cloudinary Upload Error:', error);
-            return reject(error);
+            return reject(new Error(`CLOUDINARY_ERROR: ${error.message || error}`));
           }
           resolve(result);
         },

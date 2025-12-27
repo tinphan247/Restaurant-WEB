@@ -66,6 +66,10 @@ export const menuItemApi = {
   async getMenuItems(): Promise<MenuItemDropdown[]> {
     try {
       const page = await menuItemApi.list({ page: 1, limit: 100, sort: 'createdAt', order: 'DESC' });
+      if (!page || !Array.isArray(page.data)) {
+        console.warn('getMenuItems: Invalid response format', page);
+        return [];
+      }
       return page.data.map(toDropdownItem);
     } catch (error) {
       console.error('Failed to fetch menu items:', error);

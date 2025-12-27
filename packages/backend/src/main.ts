@@ -15,6 +15,8 @@ async function bootstrap() {
       'http://localhost:5173', 
       'http://localhost:5174', 
       'http://localhost:3000',
+      'https://restaurant-web-2t3m.vercel.app',
+      'https://restaurant-web-five-wine.vercel.app',
       process.env.FRONTEND_URL,
     ].filter(Boolean) as string[],
     credentials: true,

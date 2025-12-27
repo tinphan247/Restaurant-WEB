@@ -75,8 +75,8 @@ export default function MenuItemCard({ item }: MenuItemCardProps) {
   const getImageUrl = (url?: string) => {
     if (!url) return undefined;
     if (/^https?:\/\//i.test(url)) return url;
-    // Use VITE_BACKEND_URL if set, fallback to localhost
-    const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    // Use VITE_BACKEND_URL if set, fallback to production
+    const backend = import.meta.env.VITE_BACKEND_URL || 'https://restaurant-web-five-wine.vercel.app';
     return `${backend}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 

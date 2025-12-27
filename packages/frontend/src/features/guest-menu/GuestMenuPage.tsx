@@ -5,7 +5,7 @@ import MenuFilters from './MenuFilters';
 import MenuItemCard from './MenuItemCard';
 import CartSidebar from './components/CartSidebar';
 import { CartProvider, useCart } from '../../contexts/CartContext';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://restaurant-web-five-wine.vercel.app';
 
 export interface GuestMenuItem {
   id: string;

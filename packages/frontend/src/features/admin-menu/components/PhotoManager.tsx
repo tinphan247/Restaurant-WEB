@@ -43,7 +43,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onUpload, on
         {photos.map((photo) => (
           <div key={photo.id} className="group relative border rounded-lg overflow-hidden bg-gray-100 aspect-square">
             <img 
-              src={`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${photo.url}`} 
+              src={`${import.meta.env.VITE_BACKEND_URL || 'https://restaurant-web-five-wine.vercel.app'}${photo.url}`} 
               alt="Menu item" 
               className="w-full h-full object-cover"
             />

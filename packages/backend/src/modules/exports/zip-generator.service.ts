@@ -19,7 +19,7 @@ export class ZipGeneratorService {
     archive.pipe(res);
 
     // Generate full QR URL with both tableId and token for each table (requirement 2.1)
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const baseUrl = process.env.FRONTEND_URL || 'https://restaurant-web-2t3m.vercel.app';
 
     for (const table of tables) {
       const qrUrl = `${baseUrl}/menu?table=${table.id}&token=${table.qrToken || ''}`;

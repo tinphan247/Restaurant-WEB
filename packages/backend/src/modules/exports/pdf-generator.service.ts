@@ -36,7 +36,7 @@ export class PdfGeneratorService {
     const fontPath = this.getFontPath();
 
     // Generate full QR URL with both tableId and token (requirement 2.1)
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const baseUrl = process.env.FRONTEND_URL || 'https://restaurant-web-2t3m.vercel.app';
     const qrUrl = `${baseUrl}/menu?table=${table.id}&token=${table.qrToken || ''}`;
     const qrDataUrl = await QRCode.toDataURL(qrUrl);
 
@@ -89,7 +89,7 @@ export class PdfGeneratorService {
   // Generate bulk PDF with all tables (requirement 3.2 - Batch Operations)
   async generateBulk(tables: any[], res: Response) {
     const fontPath = this.getFontPath();
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const baseUrl = process.env.FRONTEND_URL || 'https://restaurant-web-2t3m.vercel.app';
 
     const doc = new PDFDocument({
       size: 'A4',

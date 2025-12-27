@@ -90,8 +90,8 @@ export class GuestMenuService {
     // Query categories (chỉ lấy active)
     const categoryQuery = this.categoryRepo
       .createQueryBuilder('category')
-      .where('category.restaurant_id = :restaurantId', { restaurantId })
-      .andWhere('category.status = :status', { status: 'active' })
+      // .where('category.restaurant_id = :restaurantId', { restaurantId }) // Tạm thời bỏ qua filter restaurantId
+      .where('category.status = :status', { status: 'active' })
       .andWhere('category.is_deleted = :isDeleted', { isDeleted: false })
       .orderBy('category.display_order', 'ASC');
 

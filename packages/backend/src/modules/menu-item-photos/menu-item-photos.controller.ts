@@ -29,21 +29,26 @@ export class MenuItemPhotosController {
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB
   }))
   async uploadPhotos(@Param('itemId') itemId: string, @UploadedFiles() files: Express.Multer.File[]) {
-    const photos = await Promise.all(
-      files.map(async (file) => {
-        // Upload to Cloudinary
-        const result = await this.cloudinaryService.uploadFile(file);
-        
-        // Save to DB with Cloudinary URL
-        return this.photosService.create({
-          menuItemId: itemId,
-          url: result.secure_url, // Use the secure URL from Cloudinary
-          isPrimary: false
-        });
-      })
-    );
-    
-    return { itemId, uploadedCount: files.length, photos };
+    try {
+      const photos = await Promise.all(
+        files.map(async (file) => {
+          // Upload to Cloudinary
+          const result = await this.cloudinaryService.uploadFile(file);
+          
+          // Save to DB with Cloudinary URL
+          return this.photosService.create({
+            menuItemId: itemId,
+            url: result.secure_url, // Use the secure URL from Cloudinary
+            isPrimary: false
+          });
+        })
+      );
+      
+      return { itemId, uploadedCount: files.length, photos };
+    } catch (error) {
+      console.error('Upload failed:', error);
+      throw new Error(`Upload failed: ${error.message || error}`);
+    }
   }
   
   // Xóa ảnh theo id

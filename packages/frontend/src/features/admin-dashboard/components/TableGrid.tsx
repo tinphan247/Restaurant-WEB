@@ -36,7 +36,7 @@ export const TableGrid: React.FC<TableGridProps> = (props) => {
     return `${baseUrl}/menu?table=${tableId || ''}&token=${token}`;
   };
 
-  if (tables.length === 0) {
+  if (!tables || tables.length === 0) {
     return <p className="text-center py-12 text-gray-500 text-lg border rounded-lg">Không tìm thấy bàn nào.</p>;
   }
 

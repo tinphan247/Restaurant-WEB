@@ -118,7 +118,7 @@ export default function ModifierManager() {
         </button>
       </div>
 
-      {groups.length === 0 ? (
+      {!groups || groups.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           No modifier groups yet. Create one to get started!
         </div>
@@ -171,7 +171,7 @@ export default function ModifierManager() {
               {/* Options List */}
               <div className="mt-4">
                 <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-semibold">Options ({group.options.length})</h3>
+                  <h3 className="font-semibold">Options ({group.options?.length || 0})</h3>
                   <button
                     onClick={() => setAddingOptionToGroup(group.id)}
                     className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
@@ -180,7 +180,7 @@ export default function ModifierManager() {
                   </button>
                 </div>
 
-                {group.options.length === 0 ? (
+                {!group.options || group.options.length === 0 ? (
                   <p className="text-sm text-gray-500 italic">
                     No options yet. {group.isRequired && 'Add at least one option (required).'}
                   </p>

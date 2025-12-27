@@ -259,52 +259,53 @@ export const MenuItemsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {items.map(item => (
-                <tr key={item.id} className="hover:bg-indigo-50 transition">
-                  <td className="py-3 px-4 font-bold text-gray-800 cursor-pointer" onClick={() => openEdit(item)}>
-                    {item.name}
-                    {item.description ? <div className="text-xs text-gray-500 font-normal mt-1">{item.description}</div> : null}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-700">
-                    {categoryNameById.get(item.categoryId) ?? item.categoryId}
-                  </td>
-                  <td className="py-3 px-4 text-sm">{formatMoneyVnd(Number(item.price))}đ</td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      {statusBadge(item.status)}
-                      <select
-                        className="border rounded px-2 py-1 text-xs"
-                        value={item.status}
-                        onChange={e => handleStatusQuickChange(item.id, e.target.value as MenuItemStatus)}
-                        title="Cập nhật nhanh status"
+              {items?.length > 0 ? (
+                items.map(item => (
+                  <tr key={item.id} className="hover:bg-indigo-50 transition">
+                    <td className="py-3 px-4 font-bold text-gray-800 cursor-pointer" onClick={() => openEdit(item)}>
+                      {item.name}
+                      {item.description ? <div className="text-xs text-gray-500 font-normal mt-1">{item.description}</div> : null}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-700">
+                      {categoryNameById.get(item.categoryId) ?? item.categoryId}
+                    </td>
+                    <td className="py-3 px-4 text-sm">{formatMoneyVnd(Number(item.price))}đ</td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        {statusBadge(item.status)}
+                        <select
+                          className="border rounded px-2 py-1 text-xs"
+                          value={item.status}
+                          onChange={e => handleStatusQuickChange(item.id, e.target.value as MenuItemStatus)}
+                          title="Cập nhật nhanh status"
+                        >
+                          <option value="available">available</option>
+                          <option value="unavailable">unavailable</option>
+                          <option value="sold_out">sold_out</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm">{item.isChefRecommended ? '✅' : '—'}</td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 mr-2"
+                        onClick={() => openEdit(item)}
                       >
-                        <option value="available">available</option>
-                        <option value="unavailable">unavailable</option>
-                        <option value="sold_out">sold_out</option>
-                      </select>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm">{item.isChefRecommended ? '✅' : '—'}</td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 mr-2"
-                      onClick={() => openEdit(item)}
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      Xóa
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {items.length === 0 && (
+                        Sửa
+                      </button>
+                      <button
+                        className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        Xóa
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-gray-500">
-                    Không có dữ liệu
+                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                    Không có dữ liệu hoặc lỗi kết nối.
                   </td>
                 </tr>
               )}

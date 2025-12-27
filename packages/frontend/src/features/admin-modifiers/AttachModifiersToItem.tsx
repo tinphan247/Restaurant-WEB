@@ -138,17 +138,12 @@ export default function AttachModifiersToItem() {
               
               {/* Dropdown */}
               <select
+                className="w-full border rounded p-2"
                 value={itemId}
-                onChange={(e) => {
-                  setItemId(e.target.value);
-                  setError(null);
-                  setSuccess(null);
-                }}
-                className="w-full border rounded px-3 py-2 bg-white"
-                disabled={loadingItems}
+                onChange={e => setItemId(e.target.value)}
               >
                 <option value="">-- Chọn món --</option>
-                {filteredItems.map(item => (
+                {filteredItems?.map(item => (
                   <option key={item.id} value={item.id}>
                     {item.name} - {item.price.toLocaleString('vi-VN')}đ
                     {item.categoryName ? ` (${item.categoryName})` : ''}
@@ -188,7 +183,7 @@ export default function AttachModifiersToItem() {
         <div className="text-center py-10">Đang tải modifier groups...</div>
       ) : (
         <div className="grid gap-4">
-          {groups.map(group => {
+          {groups?.map(group => {
             const checked = selectedGroups.has(group.id);
             return (
               <div key={group.id} className="bg-white shadow rounded p-4">

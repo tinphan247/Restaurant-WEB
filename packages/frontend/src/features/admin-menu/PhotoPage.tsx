@@ -25,9 +25,14 @@ export const PhotoPage: React.FC = () => {
 
   useEffect(() => {
     if (search.length > 0) {
-      menuItemApi.list({ q: search, limit: 10 }).then(res => {
-        setSuggestions(res.data || []);
-      });
+      menuItemApi.list({ q: search, limit: 10 })
+        .then(res => {
+          setSuggestions(res?.data || []);
+        })
+        .catch(err => {
+          console.error('Failed to search menu items', err);
+          setSuggestions([]);
+        });
     } else {
       setSuggestions([]);
     }

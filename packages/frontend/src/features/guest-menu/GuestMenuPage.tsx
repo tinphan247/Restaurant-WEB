@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import { ShoppingCart } from 'lucide-react';
 import MenuFilters from './MenuFilters';
 import MenuItemCard from './MenuItemCard';
 import CartSidebar from './components/CartSidebar';
-import { CartProvider, useCart } from '../../contexts/CartContext';
+import { useCart } from '../../contexts/CartContext';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://restaurant-web-five-wine.vercel.app';
 
 export interface GuestMenuItem {
@@ -60,20 +61,14 @@ interface GuestMenuPageProps {
   authToken?: string | null;
 }
 
+
 export default function GuestMenuPage({ tableInfo, authToken }: GuestMenuPageProps = {}) {
-  return (
-    <CartProvider>
-      <GuestMenuContent tableInfo={tableInfo} authToken={authToken} />
-    </CartProvider>
-  );
+  return <GuestMenuContent tableInfo={tableInfo} authToken={authToken} />;
 }
 
 function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
   const { itemCount } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
-  const [menuData, setMenuData] = useState<GuestMenuResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<MenuFiltersState>({
     q: '',
@@ -83,45 +78,35 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
     chefRecommended: false,
   });
 
-
-  const loadMenu = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-
-
-      const params = new URLSearchParams();
-      if (filters.q) params.append('q', filters.q);
-      if (filters.categoryId) params.append('categoryId', filters.categoryId);
-      if (filters.sort) params.append('sort', filters.sort);
-      if (filters.order) params.append('order', filters.order);
-      if (filters.chefRecommended) params.append('chefRecommended', 'true');
-      if (authToken) params.append('token', authToken);
-      params.append('page', page.toString());
-      params.append('limit', '20');
-      // Luôn truyền restaurantId mặc định
-      params.append('restaurantId', '00000000-0000-0000-0000-000000000000');
-
-      const response = await axios.get(`${API_BASE_URL}/api/menu?${params.toString()}`);
-      setMenuData(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load menu');
-    } finally {
-      setLoading(false);
-    }
+  // React Query fetch function
+  const fetchMenu = async () => {
+    const params = new URLSearchParams();
+    if (filters.q) params.append('q', filters.q);
+    if (filters.categoryId) params.append('categoryId', filters.categoryId);
+    if (filters.sort) params.append('sort', filters.sort);
+    if (filters.order) params.append('order', filters.order);
+    if (filters.chefRecommended) params.append('chefRecommended', 'true');
+    if (authToken) params.append('token', authToken);
+    params.append('page', page.toString());
+    params.append('limit', '20');
+    params.append('restaurantId', '00000000-0000-0000-0000-000000000000');
+    const response = await axios.get(`${API_BASE_URL}/api/menu?${params.toString()}`);
+    return response.data;
   };
 
-  useEffect(() => {
-    loadMenu();
-  }, [page, filters]);
+  const { data: menuData, isLoading, error, refetch } = useQuery({
+    queryKey: ['menu', page, filters, authToken],
+    queryFn: fetchMenu,
+    placeholderData: (prev) => prev,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const handleFilterChange = (newFilters: Partial<MenuFiltersState>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
-    setPage(1); // Reset to page 1 when filters change
+    setPage(1);
   };
 
-  if (loading && !menuData) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -137,9 +122,9 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="bg-red-50 text-red-600 p-6 rounded-lg max-w-md text-center">
           <h2 className="text-xl font-bold mb-2">Error Loading Menu</h2>
-          <p>{error}</p>
+          <p>{(error as any).message}</p>
           <button
-            onClick={loadMenu}
+            onClick={() => refetch()}
             className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
           >
             Try Again
@@ -173,7 +158,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                 Our Menu
-                {loading && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>}
+                {isLoading && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>}
               </h1>
               <p className="text-gray-600 mt-1">Browse our delicious offerings</p>
 
@@ -198,7 +183,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
 
       {/* Menu Content */}
       <div className="max-w-7xl mx-auto px-4 pb-12">
-        {menuData.data.categories.map((category) => (
+        {menuData.data.categories.map((category: GuestMenuCategory) => (
           <div key={category.id} className="mb-12">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">{category.name}</h2>
@@ -243,27 +228,22 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
         )}
       </div>
 
-      {/* Floating Cart Button */}
-      {itemCount > 0 && (
-        <button
-          onClick={() => setCartOpen(true)}
-          className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all hover:scale-110 z-30 flex items-center gap-2"
-        >
-          <ShoppingCart className="w-6 h-6" />
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-            {itemCount}
-          </span>
-        </button>
-      )}
+      {/* Floating Cart Button - luôn hiển thị */}
+      <button
+        onClick={() => setCartOpen((open) => !open)}
+        className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all hover:scale-110 z-30 flex items-center gap-2"
+        aria-label="Giỏ hàng"
+      >
+        <ShoppingCart className="w-6 h-6" />
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+          {itemCount}
+        </span>
+      </button>
 
       {/* Cart Sidebar */}
       <CartSidebar 
         isOpen={cartOpen} 
         onClose={() => setCartOpen(false)}
-        onCheckout={() => {
-          // TODO: Implement checkout flow
-          alert('Checkout feature coming soon!');
-        }}
       />
     </div>
   );

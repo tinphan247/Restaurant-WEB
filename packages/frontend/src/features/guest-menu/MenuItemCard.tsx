@@ -64,8 +64,6 @@ export default function MenuItemCard({ item }: MenuItemCardProps) {
     setSelectedModifiers({});
     setShowModifiers(false);
     
-    // Optional: Show success toast instead of alert
-    alert(`${item.name} added to cart!`);
   };
 
   const isSoldOut = item.status === 'sold_out';

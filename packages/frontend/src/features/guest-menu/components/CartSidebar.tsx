@@ -1,6 +1,8 @@
+
 import { X, ShoppingCart, Minus, Plus, Trash2 } from 'lucide-react';
 import { useCart } from '../../../contexts/CartContext';
 import type { CartItem } from '../../../contexts/CartContext';
+import { useNavigate } from 'react-router-dom';
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -8,8 +10,10 @@ interface CartSidebarProps {
   onCheckout?: () => void;
 }
 
+
 export default function CartSidebar({ isOpen, onClose, onCheckout }: CartSidebarProps) {
   const { items, itemCount, totalPrice, updateQuantity, removeItem, clearCart, getItemPrice } = useCart();
+  const navigate = useNavigate();
 
   if (!isOpen) return null;
 
@@ -160,7 +164,20 @@ export default function CartSidebar({ isOpen, onClose, onCheckout }: CartSidebar
                 Clear Cart
               </button>
               <button
-                onClick={onCheckout}
+                onClick={() => {
+                  // Chuẩn bị dữ liệu order
+                  const orderId = Date.now().toString(); // Tạm thời sinh orderId, thực tế lấy từ backend
+                  const userId = undefined; // Nếu có user đăng nhập thì truyền userId
+                  navigate('/payment', {
+                    state: {
+                      items,
+                      total: totalPrice,
+                      orderId,
+                      userId,
+                    },
+                  });
+                  if (onCheckout) onCheckout();
+                }}
                 className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 Checkout

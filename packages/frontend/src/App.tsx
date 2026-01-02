@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AdminPage } from './features/admin-dashboard/AdminPage';
 import { ScanPage } from './features/customer-view/ScanPage';
 import ModifierManager from './features/admin-modifiers/ModifierManager';
@@ -12,10 +12,38 @@ import SelectPaymentMethodPage from './features/payment/SelectPaymentMethodPage'
 import { CategoryPage } from './features/admin-menu/CategoryPage';
 import { PhotoPage } from './features/admin-menu/PhotoPage';
 import { MenuItemsPage } from './features/admin-menu/MenuItemsPage';
+import { LoginScreen } from './features/auth/LoginScreen'; // 1. Thêm LoginScreen
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem('access_token');
+  const location = useLocation();
 
+  if (!token) {
+    // Lưu lại vị trí đang truy cập để sau khi login xong có thể quay lại
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
+};
 function App() {
   return (
     <Routes>
+      {/* 3. Route công khai cho Đăng nhập */}
+      <Route path="/login" element={<LoginScreen />} />
+
+      {/* 4. Nhóm các Route Admin vào ProtectedRoute */}
+      <Route path="/admin" element={
+        <ProtectedRoute>
+          <AdminLayout>
+            <div className="p-8">
+              <header className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                <p className="text-gray-600 mt-1">Manage your restaurant tables</p>
+              </header>
+              <AdminPage />
+            </div>
+          </AdminLayout>
+        </ProtectedRoute>
+      } />
       {/* 1. Dashboard (Quản lý bàn) */}
       <Route path="/admin" element={
         <AdminLayout>
@@ -106,7 +134,7 @@ function App() {
       <Route path="/guest-menu" element={<GuestMenuPage />} />
       <Route path="/select-payment-method" element={<SelectPaymentMethodPage />} />
       <Route path="/payment" element={<PaymentPage />} />
-      <Route path="/" element={<Navigate to="/admin" replace />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<h2 className="text-red-500 p-8">404 - Not Found</h2>} />
     </Routes>
   );

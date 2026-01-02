@@ -18,7 +18,9 @@ import { MenuItemPhotoEntity } from './modules/menu-item-photos/entities/menu-it
 import { ModifierGroupEntity } from './modules/modifiers/entities/modifier-group.entity';
 import { ModifierOptionEntity } from './modules/modifiers/entities/modifier-option.entity';
 import { MenuItemModifierGroupEntity } from './modules/modifiers/entities/menu-item-modifier-group.entity';
-
+import { AuthModule } from './modules/auth/auth.module'; // Thêm dòng này
+import { UserModule } from './modules/user/user.module'; // Thêm dòng này
+import { User } from './modules/user/user.entity';      // Thêm dòng này
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -36,6 +38,8 @@ import { MenuItemModifierGroupEntity } from './modules/modifiers/entities/menu-i
         password: config.get<string>('DATABASE_PASSWORD'),
         database: config.get<string>('DATABASE_NAME'),
         entities: [
+          User,
+          AuthModule,
           TableEntity,
           MenuCategoryEntity,
           MenuItemEntity,
@@ -64,6 +68,8 @@ import { MenuItemModifierGroupEntity } from './modules/modifiers/entities/menu-i
     MenuItemsModule,
     MenuCategoriesModule, 
     MenuItemPhotosModule, 
+    AuthModule, // THÊM MODULE VÀO ĐÂY
+    UserModule, // THÊM MODULE VÀO ĐÂY
   ],
 })
 export class AppModule {}

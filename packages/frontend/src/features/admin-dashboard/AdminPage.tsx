@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 // Sửa lỗi Import: Dùng Alias chuẩn (đã cấu hình trong vite.config.ts)
 import type { Table, TableQueryDto } from '@shared/types/table';
 import { tableApi } from '../../services/tableApi';
-
+// Import thêm logout từ file useAuth
+import { logout } from '../../features/auth/hooks/useAuth';
 import { FilterBar } from './components/FilterBar';
 import { TableGrid } from './components/TableGrid';
 import { TableForm } from './components/TableForm';
@@ -25,7 +26,12 @@ export const AdminPage: React.FC = () => {
       page: 1, 
       limit: 10 
     });
-
+// Hàm đăng xuất
+  const handleLogout = () => {
+    if (window.confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
+      logout();
+    }
+  };
   const fetchTables = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -123,12 +129,20 @@ export const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="p-2 sm:p-4 md:p-6">
-      <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Quản Lý Bàn Ăn ({totalItems} bàn)</h2>
+    <div className="p-2 sm:p-4 md:p-6 bg-gray-50 min-h-screen relative pb-20"> 
+      {/* pb-20 để nội dung cuối trang không bị nút đè lên */}
+
+      {/* TIÊU ĐỀ TRANG */}
+      <div className="mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+          Quản Lý Bàn Ăn ({totalItems} bàn)
+        </h2>
+      </div>
       
+      {/* KHU VỰC NÚT THÊM MỚI VÀ QR */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
         <button 
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition w-full sm:w-auto" 
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full sm:w-auto font-medium shadow-sm" 
           onClick={() => handleOpenModal(null)}
         >
           + Thêm Bàn Mới
@@ -136,44 +150,53 @@ export const AdminPage: React.FC = () => {
         
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
           <BulkDownloadActions />
-          
           <button 
-            className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition disabled:bg-gray-400 w-full sm:w-auto"
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition disabled:bg-gray-400 w-full sm:w-auto font-medium shadow-sm"
             onClick={handleRegenerateAllQr}
-            disabled={isLoading || tables.filter(t => t.status === 'active').length === 0}
-            title="Tạo lại tất cả mã QR cho các bàn đang hoạt động"
+            disabled={isLoading}
           >
             🔄 Tạo Lại Tất Cả QR
           </button>
         </div>
       </div>
 
-      <FilterBar currentQuery={query} onQueryChange={setQuery} />
-
-      {isLoading ? (
-        <p className="text-center py-8">Đang tải dữ liệu...</p>
-      ) : (
-        <TableGrid 
-          tables={tables} 
-          onEdit={(table) => handleOpenModal(table)} 
-          // SỬA LỖI: CHỈ TRUYỀN onEdit. Bỏ 3 props kia theo UX mới
-          // onStatusChange={handleStatusChange}
-          // onRegenerateQr={handleRegenerateQr}
-          // onDelete={handleDelete}
-        />
-      )}
-      
-      {/* Thêm Pagination controls ở đây */}
-      <div className="mt-4 text-center">
-        {/* Placeholder for Pagination */}
+      {/* FILTER BAR */}
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+        <FilterBar currentQuery={query} onQueryChange={setQuery} />
       </div>
+
+      {/* DANH SÁCH BÀN */}
+      {isLoading ? (
+        <div className="text-center py-20">Đang tải dữ liệu...</div>
+      ) : (
+        <TableGrid tables={tables} onEdit={(table) => handleOpenModal(table)} />
+      )}
+
+      {/* ========================================================== */}
+      {/* NÚT ĐĂNG XUẤT - GÓC TRÁI DƯỚI CÙNG */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button 
+          onClick={handleLogout}
+          className="group flex items-center gap-3 px-4 py-3 bg-white border border-red-200 text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300 shadow-lg"
+          title="Đăng xuất khỏi hệ thống"
+        >
+          <div className="p-1 bg-red-50 rounded-full group-hover:bg-red-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </div>
+          <span className="font-semibold pr-2">Đăng xuất</span>
+        </button>
+      </div>
+      {/* ========================================================== */}
       
       {isModalOpen && (
         <TableForm
           table={editingTable}
           onClose={() => setIsModalOpen(false)}
           onSuccess={handleSuccess}
-          // SỬA LỖI: TRUYỀN CÁC HÀM XỬ LÝ VÀO TABLEFORM
           onStatusChange={handleStatusChange} 
           onRegenerateQr={handleRegenerateQr}
           onDelete={handleDelete}

@@ -8,7 +8,6 @@ import AdminLayout from './components/AdminLayout';
 import PaymentPage from './features/payment/PaymentPage';
 import SelectPaymentMethodPage from './features/payment/SelectPaymentMethodPage';
 
-// IMPORT CÁC COMPONENT MỚI CỦA BẠN TẠI ĐÂY
 import { CategoryPage } from './features/admin-menu/CategoryPage';
 import { PhotoPage } from './features/admin-menu/PhotoPage';
 import { MenuItemsPage } from './features/admin-menu/MenuItemsPage';
@@ -24,6 +23,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   return <>{children}</>;
 };
+import { OrderHistoryPage } from './features/order/OrderHistoryPage';
 function App() {
   return (
     <Routes>
@@ -116,7 +116,7 @@ function App() {
         </AdminLayout>
       } />
       
-      {/* 5. Menu Items Management (Tạm thời giữ placeholder cho Person 2) */}
+      {/* 5. Menu Items Management */}
       <Route path="/admin/items" element={
         <AdminLayout>
           <div className="p-8">
@@ -135,6 +135,13 @@ function App() {
       <Route path="/select-payment-method" element={<SelectPaymentMethodPage />} />
       <Route path="/payment" element={<PaymentPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/orders" element={
+        <AdminLayout>
+          <OrderHistoryPage />
+        </AdminLayout>
+      } />
+
+      <Route path="/" element={<Navigate to="/admin" replace />} />
       <Route path="*" element={<h2 className="text-red-500 p-8">404 - Not Found</h2>} />
     </Routes>
   );

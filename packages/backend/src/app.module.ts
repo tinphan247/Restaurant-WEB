@@ -21,10 +21,16 @@ import { MenuItemModifierGroupEntity } from './modules/modifiers/entities/menu-i
 import { AuthModule } from './modules/auth/auth.module'; // Thêm dòng này
 import { UserModule } from './modules/user/user.module'; // Thêm dòng này
 import { User } from './modules/user/user.entity';      // Thêm dòng này
+
+import { OrderModule } from './modules/order/order.module';
+import  { OrderEntity } from './modules/order/entities/order.entity';
+import { OrderItemEntity } from './modules/order/entities/order-item.entity';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+
     }),
 
     TypeOrmModule.forRootAsync({
@@ -47,6 +53,9 @@ import { User } from './modules/user/user.entity';      // Thêm dòng này
           ModifierGroupEntity,
           ModifierOptionEntity,
           MenuItemModifierGroupEntity,
+          OrderEntity,
+          OrderItemEntity,
+
         ],
         // Tự động tạo bảng nếu chưa có (chỉ nên dùng khi mới deploy hoặc dev)
         // Set biến môi trường DB_SYNC=true trên Vercel để kích hoạt
@@ -70,6 +79,7 @@ import { User } from './modules/user/user.entity';      // Thêm dòng này
     MenuItemPhotosModule, 
     AuthModule, // THÊM MODULE VÀO ĐÂY
     UserModule, // THÊM MODULE VÀO ĐÂY
+    OrderModule,
   ],
 })
 export class AppModule {}

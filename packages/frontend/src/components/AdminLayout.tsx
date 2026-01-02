@@ -40,6 +40,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       label: 'Photos',
       icon: '📸',
     },
+    {
+      path: '/orders',
+      label: 'Orders History',
+      icon: '🧾',
+    },
   ];
 
   const isActive = (path: string, exact?: boolean) => {

@@ -23,8 +23,10 @@ import { UserModule } from './modules/user/user.module'; // Thêm dòng này
 import { User } from './modules/user/user.entity';      // Thêm dòng này
 
 import { OrderModule } from './modules/order/order.module';
-import  { OrderEntity } from './modules/order/entities/order.entity';
+import { OrderEntity } from './modules/order/entities/order.entity';
 import { OrderItemEntity } from './modules/order/entities/order-item.entity';
+import { PaymentModule } from './modules/payment/payment.module';
+import { Payment } from './modules/payment/entities/payment.entity';
 
 @Module({
   imports: [
@@ -54,7 +56,7 @@ import { OrderItemEntity } from './modules/order/entities/order-item.entity';
           MenuItemModifierGroupEntity,
           OrderEntity,
           OrderItemEntity,
-
+          Payment,
         ],
         // Tự động tạo bảng nếu chưa có (chỉ nên dùng khi mới deploy hoặc dev)
         // Set biến môi trường DB_SYNC=true trên Vercel để kích hoạt
@@ -76,9 +78,10 @@ import { OrderItemEntity } from './modules/order/entities/order-item.entity';
     MenuItemsModule,
     MenuCategoriesModule, 
     MenuItemPhotosModule, 
-    AuthModule, // THÊM MODULE VÀO ĐÂY
-    UserModule, // THÊM MODULE VÀO ĐÂY
+    AuthModule,
+    UserModule,
     OrderModule,
+    PaymentModule,
   ],
 })
 export class AppModule {}

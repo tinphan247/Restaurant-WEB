@@ -6,6 +6,8 @@ import MenuFilters from './MenuFilters';
 import MenuItemCard from './MenuItemCard';
 import CartSidebar from './components/CartSidebar';
 import { useCart } from '../../contexts/CartContext';
+import { ProfilePage } from '../admin-dashboard/ProfilePage';
+import { LoginScreen } from '../auth/LoginScreen';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://restaurant-web-five-wine.vercel.app';
 
 export interface GuestMenuItem {
@@ -70,6 +72,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
   const { itemCount } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'menu' | 'cart' | 'profile'>('menu');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<MenuFiltersState>({
     q: '',
@@ -105,6 +108,16 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
   const handleFilterChange = (newFilters: Partial<MenuFiltersState>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
     setPage(1);
+  };
+
+  // Callback khi đăng nhập thành công
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+  };
+
+  // Callback khi đăng xuất
+  const handleLogout = () => {
+    setIsLoggedIn(false);
   };
 
   if (isLoading) {
@@ -173,16 +186,30 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <MenuFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          categories={menuData.data.categories}
-        />
-      </div>
+      {/* Filters - Chỉ hiển thị khi ở tab menu */}
+      {activeTab === 'menu' && (
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <MenuFilters
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            categories={menuData.data.categories}
+          />
+        </div>
+      )}
+
+      {/* Profile Content - Hiển thị LoginScreen hoặc ProfilePage */}
+      {activeTab === 'profile' && (
+        <div className="pb-20">
+          {isLoggedIn ? (
+            <ProfilePage />
+          ) : (
+            <LoginScreen onLoginSuccess={handleLoginSuccess} />
+          )}
+        </div>
+      )}
 
       {/* Menu Content */}
+      {activeTab === 'menu' && (
       <div className="max-w-7xl mx-auto px-4 pb-12">
         {menuData.data.categories.map((category: GuestMenuCategory) => (
           <div key={category.id} className="mb-12">
@@ -228,6 +255,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
           </div>
         )}
       </div>
+      )}
 
       {/* Floating Cart Button - Chỉ hiển thị trên desktop */}
       <button
@@ -293,6 +321,24 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
           </button>
         </div>
       </nav>
+
+      {/* Logout Button - Hiển thị ở góc phải khi đang ở profile tab và đã đăng nhập */}
+      {isLoggedIn && activeTab === 'profile' && (
+        <button 
+          onClick={handleLogout}
+          className="group fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 flex items-center gap-3 px-4 py-3 bg-white border border-red-200 text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300 shadow-lg"
+          title="Đăng xuất khỏi hệ thống"
+        >
+          <div className="p-1 bg-red-50 rounded-full group-hover:bg-red-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </div>
+          <span className="font-semibold pr-2">Đăng xuất</span>
+        </button>
+      )}
 
       {/* Cart Sidebar */}
       <CartSidebar 

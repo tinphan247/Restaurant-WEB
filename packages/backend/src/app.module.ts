@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TablesModule } from './tables/tables.module';
 import { QrAuthModule } from './qr-auth/qr-auth.module';
 import { ExportsModule } from './modules/exports/exports.module';
@@ -73,6 +74,8 @@ import { ReviewEntity } from './modules/review/entities/review.entity';
       secret: process.env.JWT_SECRET || 'dev-secret-key',
       signOptions: { expiresIn: '1d' },
     }),
+
+    ScheduleModule.forRoot(),
 
     TablesModule,
     QrAuthModule,

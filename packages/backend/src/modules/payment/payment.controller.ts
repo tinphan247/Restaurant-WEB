@@ -51,8 +51,21 @@ export class PaymentController {
 	// POST /payment/momo/ipn (callback từ MoMo)
 	@Post('momo/ipn')
 	handleMomoIpn(@Body() payload: MomoIpnDto) {
+		console.log('[PaymentController] MoMo IPN received:', JSON.stringify(payload));
 		// PaymentService sẽ verify signature và cập nhật trạng thái
 		return this.service.handleMomoIpn(payload);
+	}
+
+	// GET /payment/momo/ipn/test (test endpoint để verify ngrok hoạt động)
+	@Get('momo/ipn/test')
+	testIpnEndpoint() {
+		const timestamp = new Date().toISOString();
+		console.log(`[PaymentController] IPN test endpoint called at ${timestamp}`);
+		return { 
+			ok: true, 
+			message: 'IPN endpoint is reachable',
+			timestamp 
+		};
 	}
 
 	// GET /payment/momo/redirect (MoMo redirect after payment)

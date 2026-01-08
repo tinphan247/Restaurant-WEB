@@ -1,6 +1,7 @@
-// DTO for creating payment
+import { PaymentMethod } from '../entities/payment.entity';
+
 export class CreatePaymentDto {
 	orderId: string;
 	amount: number;
-	method: 'stripe' | 'momo';
+	method: PaymentMethod;
 }

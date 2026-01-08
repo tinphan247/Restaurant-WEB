@@ -50,6 +50,8 @@ export class MomoService {
 
   constructor(private readonly configService: ConfigService) {
     this.cfg = buildMomoConfig(this.configService);
+    this.logger.log(`[MomoService] Initialized with IPN URL: ${this.cfg.ipnUrl}`);
+    this.logger.log(`[MomoService] Initialized with Redirect URL: ${this.cfg.redirectUrl}`);
   }
 
   private sign(raw: string): string {
@@ -71,19 +73,43 @@ export class MomoService {
 
   verifyIpnSignature(payload: MomoIpnPayload): void {
     const { signature, ...rest } = payload;
-    const raw = Object.keys(rest)
+    const skipVerify = this.configService.get<boolean>('PAYMENT_SKIP_SIGNATURE_VERIFY', false);
+
+    // Build raw string theo MoMo IPN spec (all fields alphabetically, including accessKey)
+    const fields = {
+      accessKey: this.cfg.accessKey,
+      ...rest,
+    };
+    
+    const raw = Object.keys(fields)
       .sort()
-      .map((k) => `${k}=${rest[k]}`)
+      .map((k) => `${k}=${fields[k]}`)
       .join('&');
+    
     const expected = this.sign(raw);
-    
-    this.logger.debug(`[verifyIpnSignature] orderId=${payload.orderId}, signature match: ${expected === signature}`);
-    
-    if (expected !== signature) {
-      this.logger.error(`[verifyIpnSignature] FAIL - orderId=${payload.orderId}, expected=${expected}, got=${signature}`);
+    const isValid = expected === signature;
+
+    // Logging cho debug
+    if (!isValid) {
+      this.logger.warn(`[verifyIpnSignature] Signature mismatch - orderId=${payload.orderId}`);
+      this.logger.debug(`[DEBUG_RAW] ${raw}`);
+      this.logger.debug(`[DEBUG_EXPECTED] ${expected}`);
+      this.logger.debug(`[DEBUG_GOT] ${signature}`);
+      this.logger.debug(`[MoMo_SPEC] https://developers.momo.vn/v3/docs/payment/api/wallet/onetime/`);
+    }
+
+    // Control via env
+    if (skipVerify) {
+      this.logger.warn(`[verifyIpnSignature] VERIFY SKIPPED (dev mode) - orderId=${payload.orderId}`);
+      return;
+    }
+
+    // Strict check for production
+    if (!isValid) {
+      this.logger.error(`[verifyIpnSignature] FAIL - Invalid signature - orderId=${payload.orderId}`);
       throw new UnauthorizedException('Invalid MoMo signature');
     }
-    
+
     this.logger.log(`[verifyIpnSignature] SUCCESS - orderId=${payload.orderId}`);
   }
 

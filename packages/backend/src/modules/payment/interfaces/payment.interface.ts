@@ -1,10 +1,14 @@
-// Payment interface
+import { PaymentStatus, PaymentMethod } from '../entities/payment.entity';
+
 export interface IPayment {
 	id: string;
 	orderId: string;
 	amount: number;
-	method: 'stripe' | 'momo';
-	status: 'pending' | 'success' | 'failed';
+	method: PaymentMethod;
+	status: PaymentStatus;
+	momoTransId?: string;
+	momoErrorCode?: string;
+	momoMessage?: string;
 	createdAt: Date;
 	updatedAt: Date;
 }

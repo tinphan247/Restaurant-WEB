@@ -6,6 +6,13 @@ import PaymentSuccessModal from './components/PaymentSuccessModal';
 import { usePayment } from './hooks/usePayment';
 import { useCart } from '../../contexts/CartContext';
 
+const createOrderId = () =>
+  (crypto.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  }));
+
 export const PaymentMethod = {
   CASH: 'cash',
   BANK: 'bank',
@@ -38,6 +45,8 @@ export default function PaymentPage() {
   }: {
     orderId?: string;
   } = location.state || {};
+
+  const orderIdRef = useRef<string>(orderId || createOrderId());
 
   // Use items from CartContext instead of location.state
   const items = cartItems;
@@ -373,13 +382,14 @@ export default function PaymentPage() {
                   return;
                 }
                 
-                if (!orderId) {
+                const resolvedOrderId = orderIdRef.current;
+                if (!resolvedOrderId) {
                   alert('Không tìm thấy mã đơn hàng!');
                   return;
                 }
                 
                 if (selectedPaymentMethod === PaymentMethod.MOMO) {
-                  payWithMomo(orderId, grandTotal);
+                  payWithMomo(resolvedOrderId, grandTotal);
                 } else if (selectedPaymentMethod === PaymentMethod.CASH || selectedPaymentMethod === PaymentMethod.BANK) {
                   alert(`Thanh toán bằng ${selectedPaymentMethod === PaymentMethod.CASH ? 'tiền mặt' : 'chuyển khoản'}. Vui lòng thanh toán tại quầy!`);
                   setTab('status');

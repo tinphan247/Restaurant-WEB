@@ -125,12 +125,12 @@ export default function MenuItemCard({ item }: MenuItemCardProps) {
           </p>
         )}
 
-        <div className="flex items-center justify-between mb-3">
-            <Link to={`/reviews?menu_item_id=${item.id}`} className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
+        <div className="mb-3">
+            <Link to={`/reviews?menu_item_id=${item.id}`} className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline mb-2">
                 <Star className="w-4 h-4 text-yellow-500 fill-current" />
                 <span>Xem đánh giá</span>
             </Link>
-            <div className="text-lg font-bold text-blue-600">
+            <div className="text-lg font-bold text-blue-600 text-right">
               {calculateTotalPrice().toLocaleString()} VND
             </div>
         </div>

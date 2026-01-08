@@ -8,37 +8,53 @@ import { CreateMomoPaymentDto } from './dto/create-momo-payment.dto';
 import { IPayment } from './interfaces/payment.interface';
 import { MomoService } from './momo.service';
 import { OrderService } from '../order/order.service';
+import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity';
 
 @Injectable()
 export class PaymentService {
 	private readonly logger = new Logger(PaymentService.name);
 
 	constructor(
-		private readonly repo: PaymentRepository = new PaymentRepository(),
+		private readonly repo: PaymentRepository,
 		private readonly momoService?: MomoService,
 		private readonly orderService?: OrderService,
 		private readonly configService?: ConfigService,
 	) {}
 
+	/**
+	 * 1️⃣ CREATE: Khởi tạo giao dịch thanh toán
+	 * Trạng thái ban đầu: pending
+	 * Bắt buộc lưu vào DB
+	 */
 	async create(dto: CreatePaymentDto): Promise<IPayment> {
-		const id = Math.random().toString(36).substring(2, 10);
 		const now = new Date();
-		const payment: IPayment = {
-			id,
+		const payment: Partial<IPayment> = {
 			orderId: dto.orderId,
 			amount: dto.amount,
 			method: dto.method,
-			status: 'pending',
+			status: PaymentStatus.PENDING,
 			createdAt: now,
 			updatedAt: now,
 		};
 
-		// Mock payment processing (legacy endpoint, prefer MoMo for production)
-		payment.status = 'pending'; // Will be updated via IPN callback
-		payment.updatedAt = new Date();
-		return this.repo.create(payment);
+		try {
+			const created = await this.repo.create(payment as IPayment);
+			if (!created) {
+				throw new BadRequestException('Failed to create payment');
+			}
+			this.logger.log(
+				`[PAYMENT_CREATE] paymentId=${created.id}, orderId=${created.orderId}, amount=${created.amount}, method=${created.method}, status=${created.status}, timestamp=${now.toISOString()}`,
+			);
+			return created;
+		} catch (error) {
+			this.logger.error(`[PAYMENT_CREATE_ERROR] Failed to create payment - ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw error;
+		}
 	}
 
+	/**
+	 * 2️⃣ CREATE MOMO: Khởi tạo giao dịch MoMo
+	 */
 	async createMomo(dto: CreateMomoPaymentDto) {
 		if (!this.momoService) {
 			throw new BadRequestException('MoMo service not available');
@@ -46,23 +62,15 @@ export class PaymentService {
 
 		this.logger.log(`[createMomo] START - orderId=${dto.orderId}, amount=${dto.amount}`);
 
-		const id = Math.random().toString(36).substring(2, 10);
-		const now = new Date();
-		const requestId = dto.orderId; 
-		const payment: IPayment = {
-			id,
-			orderId: dto.orderId,
-			amount: dto.amount,
-			method: 'momo',
-			status: 'pending',
-			createdAt: now,
-			updatedAt: now,
-		};
-
-		await this.repo.create(payment);
-		this.logger.debug(`[createMomo] Payment record created - paymentId=${id}`);
-
 		try {
+			// Tạo payment record
+			const payment = await this.create({
+				orderId: dto.orderId,
+				amount: dto.amount,
+				method: PaymentMethod.MOMO,
+			});
+
+			const requestId = dto.orderId;
 			const momo = await this.momoService.createPayment({
 				orderId: dto.orderId,
 				amount: dto.amount,
@@ -77,56 +85,101 @@ export class PaymentService {
 				momo,
 			};
 		} catch (error) {
-			await this.repo.update(payment.id, { status: 'failed', updatedAt: new Date() });
 			this.logger.error(`[createMomo] ERROR - orderId=${dto.orderId}, error=${error instanceof Error ? error.message : 'Unknown error'}`);
 			throw new BadRequestException(`Failed to create MoMo payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
 		}
 	}
 
+	/**
+	 * 3️⃣ HANDLE MOMO IPN: Xử lý callback từ MoMo
+	 * Chỉ tin kết quả từ MoMo IPN / Query
+	 * pending / expired → success (nếu resultCode = 0)
+	 * pending / expired → failed (nếu resultCode ≠ 0)
+	 */
 	async handleMomoIpn(payload: any) {
 		if (!this.momoService) {
 			throw new BadRequestException('MoMo service not available');
 		}
 
-		this.logger.log(`[handleMomoIpn] IPN received - orderId=${payload.orderId}, resultCode=${payload.resultCode}`);
+		this.logger.log(`[PAYMENT_IPN_RECEIVED] orderId=${payload.orderId}, paymentId=${undefined}, momoPayload=${JSON.stringify(payload)}, timestamp=${new Date().toISOString()}`);
 
-		// Verify signature first
+		// Verify signature
 		try {
 			this.momoService.verifyIpnSignature(payload);
-			this.logger.log(`[handleMomoIpn] Signature verified - orderId=${payload.orderId}`);
+			this.logger.log(`[PAYMENT_IPN_VERIFIED] orderId=${payload.orderId}`);
 		} catch (error) {
-			this.logger.error(`[handleMomoIpn] Signature verification failed - orderId=${payload.orderId}, error=${error instanceof Error ? error.message : 'Unknown error'}`);
+			this.logger.error(`[PAYMENT_IPN_SIGNATURE_ERROR] orderId=${payload.orderId}, error=${error instanceof Error ? error.message : 'Unknown error'}`);
 			throw new BadRequestException(`Invalid MoMo signature: ${error instanceof Error ? error.message : 'Unknown error'}`);
 		}
 
-		const { orderId, resultCode } = payload;
+		const { orderId, resultCode, transId, message } = payload;
 
-		const payment = await this.findByOrderId(orderId);
-		if (!payment) {
-			this.logger.error(`[handleMomoIpn] Payment not found - orderId=${orderId}`);
-			throw new NotFoundException('Payment not found');
-		}
-
-		const status: IPayment['status'] = resultCode === 0 ? 'success' : 'failed';
-		await this.repo.update(payment.id, { status, updatedAt: new Date() });
-		this.logger.log(`[handleMomoIpn] Payment status updated - paymentId=${payment.id}, status=${status}`);
-
-		// sync Order status
-		if (this.orderService) {
-			try {
-				const orderStatus = resultCode === 0 ? 'completed' : 'cancelled';
-				await this.orderService.updateStatus(orderId, orderStatus);
-				this.logger.log(`[handleMomoIpn] Order status synced - orderId=${orderId}, orderStatus=${orderStatus}`);
-			} catch (error) {
-				this.logger.error(`[handleMomoIpn] Failed to sync order status - orderId=${orderId}, error=${error instanceof Error ? error.message : 'Unknown error'}`);
+		try {
+			const payment = await this.repo.findByOrderId(orderId);
+			if (!payment) {
+				this.logger.error(`[PAYMENT_IPN_NOT_FOUND] Payment not found for orderId=${orderId}`);
+				throw new NotFoundException('Payment not found');
 			}
-		} else {
-			this.logger.warn(`[handleMomoIpn] OrderService not available, skipping order sync - orderId=${orderId}`);
-		}
 
-		return { ok: true, status };
+			// ⚔️ CHECK RACE CONDITION: Nếu đã success, skip
+			if (payment.status === PaymentStatus.SUCCESS) {
+				this.logger.log(
+					`[PAYMENT_RACE_CONDITION] paymentId=${payment.id}, orderId=${payment.orderId}, currentStatus=${payment.status}, source=IPN, action=SKIPPED, reason=already_success, timestamp=${new Date().toISOString()}`,
+				);
+				return { ok: true, status: payment.status };
+			}
+
+			// ⚔️ CHECK RACE CONDITION: Nếu trạng thái không phải pending/expired, skip
+			if (![PaymentStatus.PENDING, PaymentStatus.EXPIRED].includes(payment.status)) {
+				this.logger.log(
+					`[PAYMENT_RACE_CONDITION] paymentId=${payment.id}, orderId=${payment.orderId}, currentStatus=${payment.status}, source=IPN, action=SKIPPED, reason=invalid_state_for_ipn, timestamp=${new Date().toISOString()}`,
+				);
+				return { ok: true, status: payment.status };
+			}
+
+			// Update payment status based on MoMo result
+			const previousStatus = payment.status;
+			let newStatus: PaymentStatus;
+
+			if (resultCode === 0) {
+				newStatus = PaymentStatus.SUCCESS;
+				this.logger.log(
+					`[PAYMENT_SUCCESS] paymentId=${payment.id}, orderId=${payment.orderId}, previousStatus=${previousStatus}, momoTransId=${transId}, amount=${payment.amount}, timestamp=${new Date().toISOString()}`,
+				);
+			} else {
+				newStatus = PaymentStatus.FAILED;
+				this.logger.log(
+					`[PAYMENT_FAILED] paymentId=${payment.id}, orderId=${payment.orderId}, previousStatus=${previousStatus}, momoErrorCode=${resultCode}, momoMessage=${message}, timestamp=${new Date().toISOString()}`,
+				);
+			}
+
+			// Update database
+			const updated = await this.repo.updateStatus(payment.id, newStatus, {
+				momoTransId: transId,
+				momoErrorCode: resultCode !== 0 ? String(resultCode) : undefined,
+				momoMessage: message,
+			});
+
+			// Sync order status
+			if (this.orderService && newStatus === PaymentStatus.SUCCESS) {
+				try {
+					await this.orderService.updateStatus(orderId, 'completed');
+					this.logger.log(`[PAYMENT_ORDER_SYNC] Order status synced - orderId=${orderId}, orderStatus=completed`);
+				} catch (error) {
+					this.logger.error(`[PAYMENT_ORDER_SYNC_ERROR] Failed to sync order status - orderId=${orderId}, error=${error instanceof Error ? error.message : 'Unknown error'}`);
+				}
+			}
+
+			return { ok: true, status: newStatus };
+		} catch (error) {
+			this.logger.error(`[PAYMENT_IPN_ERROR] orderId=${orderId}, error=${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw error;
+		}
 	}
 
+	/**
+	 * QUERY MOMO: Kiểm tra trạng thái thanh toán MoMo
+	 */
 	async queryMomo(orderId: string, requestId: string) {
 		if (!this.momoService) {
 			throw new BadRequestException('MoMo service not available');
@@ -144,15 +197,74 @@ export class PaymentService {
 		}
 	}
 
+	/**
+	 * CRON TIMEOUT: Update payment pending ≥5 phút thành expired
+	 * Chỉ update khi status = pending
+	 */
+	async handlePaymentTimeout(minuteThreshold: number = 5): Promise<{ processedCount: number; updatedPaymentIds: string[] }> {
+		const startTime = new Date();
+		this.logger.log(`[PAYMENT_CRON_START] timestamp=${startTime.toISOString()}`);
+
+		const updatedPaymentIds: string[] = [];
+
+		try {
+			const pendingPayments = await this.repo.findPendingOlderThan(minuteThreshold);
+			this.logger.debug(`[PAYMENT_CRON_FOUND] Found ${pendingPayments.length} pending payments older than ${minuteThreshold} minutes`);
+
+			for (const payment of pendingPayments) {
+				try {
+					// Double check status in database to avoid race condition
+					const current = await this.repo.findOne(payment.id);
+					if (!current) {
+						this.logger.warn(`[PAYMENT_CRON_NOT_FOUND] Payment not found - paymentId=${payment.id}`);
+						continue;
+					}
+
+					// Skip if not pending
+					if (current.status !== PaymentStatus.PENDING) {
+						this.logger.log(
+							`[PAYMENT_RACE_CONDITION] paymentId=${current.id}, orderId=${current.orderId}, currentStatus=${current.status}, source=CRON, action=SKIPPED, reason=not_pending, timestamp=${new Date().toISOString()}`,
+						);
+						continue;
+					}
+
+					// Update to expired
+					await this.repo.updateStatus(payment.id, PaymentStatus.EXPIRED);
+					updatedPaymentIds.push(payment.id);
+
+					this.logger.log(
+						`[PAYMENT_CRON_UPDATE] paymentId=${payment.id}, orderId=${payment.orderId}, from=${PaymentStatus.PENDING}, to=${PaymentStatus.EXPIRED}`,
+					);
+					this.logger.log(
+						`[PAYMENT_EXPIRED] paymentId=${payment.id}, orderId=${payment.orderId}, expiredAt=${new Date().toISOString()}, pendingDuration=${Math.round((Date.now() - payment.createdAt.getTime()) / 1000)} seconds`,
+					);
+				} catch (error) {
+					this.logger.error(`[PAYMENT_CRON_ERROR] Failed to update payment - paymentId=${payment.id}, error=${error instanceof Error ? error.message : 'Unknown error'}`);
+				}
+			}
+
+			const endTime = new Date();
+			this.logger.log(`[PAYMENT_CRON_END] processedCount=${updatedPaymentIds.length}, timestamp=${endTime.toISOString()}`);
+
+			return {
+				processedCount: updatedPaymentIds.length,
+				updatedPaymentIds,
+			};
+		} catch (error) {
+			this.logger.error(`[PAYMENT_CRON_FATAL_ERROR] ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw error;
+		}
+	}
+
 	async findAll(): Promise<IPayment[]> {
 		return this.repo.findAll();
 	}
 
-	async findOne(id: string): Promise<IPayment | undefined> {
+	async findOne(id: string): Promise<IPayment | null> {
 		return this.repo.findOne(id);
 	}
 
-	async update(id: string, dto: UpdatePaymentDto): Promise<IPayment | undefined> {
+	async update(id: string, dto: UpdatePaymentDto): Promise<IPayment | null> {
 		return this.repo.update(id, { ...dto, updatedAt: new Date() });
 	}
 
@@ -160,7 +272,6 @@ export class PaymentService {
 		return this.repo.remove(id);
 	}
 
-	// Handle MoMo redirect after payment: stay on MoMo success page, don't hop to frontend
 	handleMomoRedirect(query: Record<string, any>, res: Response): void {
 		const { orderId, resultCode, transId, amount } = query;
 		this.logger.log(`[handleMomoRedirect] MoMo redirect received - orderId=${orderId}, resultCode=${resultCode}`);
@@ -170,7 +281,6 @@ export class PaymentService {
 			? 'Thanh toán thành công. Bạn có thể đóng cửa sổ này.'
 			: 'Thanh toán không thành công hoặc đã hủy. Bạn có thể đóng cửa sổ này.';
 
-		// Return a minimal HTML page so browser stays here (no further redirects)
 		res.status(200).send(`<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -196,10 +306,5 @@ export class PaymentService {
   </div>
 </body>
 </html>`);
-	}
-
-	private async findByOrderId(orderId: string): Promise<IPayment | undefined> {
-		const all = await this.repo.findAll();
-		return all.find((p) => p.orderId === orderId);
 	}
 }

@@ -9,6 +9,13 @@ import { ProfilePage } from '../admin-dashboard/ProfilePage';
 import { LoginScreen } from '../auth/LoginScreen';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const createOrderId = () =>
+  (crypto.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  }));
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://restaurant-web-five-wine.vercel.app';
 
 export interface GuestMenuItem {
@@ -286,7 +293,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
       {/* Floating Cart Button - Desktop only */}
       <button
         onClick={() => {
-          const orderId = Date.now().toString();
+          const orderId = createOrderId();
           navigate('/payment', {
             state: { orderId },
           });
@@ -322,7 +329,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
           <button
             onClick={() => {
               // Navigate to payment page with orderId
-              const orderId = Date.now().toString(); // Generate temporary orderId
+              const orderId = createOrderId();
               navigate('/payment', {
                 state: {
                   orderId,

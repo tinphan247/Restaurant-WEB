@@ -1,6 +1,10 @@
-// DTO for updating payment
+import { PaymentStatus, PaymentMethod } from '../entities/payment.entity';
+
 export class UpdatePaymentDto {
 	amount?: number;
-	method?: 'stripe' | 'momo';
-	status?: 'pending' | 'success' | 'failed';
+	method?: PaymentMethod;
+	status?: PaymentStatus;
+	momoTransId?: string;
+	momoErrorCode?: string;
+	momoMessage?: string;
 }

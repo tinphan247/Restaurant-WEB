@@ -31,6 +31,7 @@ import { Payment } from './modules/payment/entities/payment.entity';
 
 import { ReviewModule } from './modules/review/review.module';
 import { ReviewEntity } from './modules/review/entities/review.entity';
+import { ReportModule } from './modules/report/report.module';
 
 @Module({
   imports: [
@@ -90,6 +91,7 @@ import { ReviewEntity } from './modules/review/entities/review.entity';
     OrderModule,
     PaymentModule,
     ReviewModule,
+    ReportModule,
   ],
 })
 export class AppModule {}

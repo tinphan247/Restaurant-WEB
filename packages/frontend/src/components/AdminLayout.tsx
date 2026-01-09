@@ -46,6 +46,11 @@ export default function AdminLayout() {
       label: 'Reviews',
       icon: '⭐',
     },
+    {
+      path: '/admin/reports',
+      label: 'Reports',
+      icon: '📈',
+    },
   ];
 
   const isActive = (path: string, exact?: boolean) => {

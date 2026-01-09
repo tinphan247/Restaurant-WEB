@@ -43,7 +43,7 @@ export default function PaymentPage() {
   const items = cartItems;
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>(PaymentMethod.MOMO);
-  const [tab, setTab] = useState<'order' | 'status' | 'add'>('order');
+  const [tab, setTab] = useState<'order' | 'status' | 'history'>('order');
   const successParam = searchParams.get('success');
   const [showSuccessModal, setShowSuccessModal] = useState(!!successParam);
   const returnUrlRef = useRef<string>('/menu');
@@ -170,8 +170,8 @@ export default function PaymentPage() {
           <TabButton active={tab === 'status'} onClick={() => setTab('status')}>
             Trạng thái
           </TabButton>
-          <TabButton active={tab === 'add'} onClick={() => setTab('add')}>
-            + Thêm món
+          <TabButton active={tab === 'history'} onClick={() => setTab('history')}>
+            Lịch sử
           </TabButton>
         </div>
 
@@ -356,9 +356,9 @@ export default function PaymentPage() {
         )}
 
         {/* TAB: ADD */}
-        {tab === 'add' && (
+        {tab === 'history' && (
           <div className="flex-1 p-4 text-center text-gray-400">
-            Tính năng thêm món sẽ sớm có!
+            Tính năng lich sử đang được phát triển.
           </div>
         )}
 

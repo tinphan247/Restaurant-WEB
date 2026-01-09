@@ -291,6 +291,15 @@ export class PaymentService {
 						continue;
 					}
 
+					// Double check payment status (might have been updated to SUCCESS by late IPN)
+					const currentPayment = await this.repo.findOne(payment.id);
+					if (currentPayment && currentPayment.status === PaymentStatus.SUCCESS) {
+						this.logger.log(
+							`[ORDER_CANCEL_DELAYED_SKIP] Payment became successful - paymentId=${payment.id}, orderId=${payment.orderId}`,
+						);
+						continue;
+					}
+
 					const order = await this.orderService.findOne(payment.orderId);
 					if (!order) {
 						this.logger.warn(`[ORDER_CANCEL_DELAYED_NOT_FOUND] Order not found - orderId=${payment.orderId}`);

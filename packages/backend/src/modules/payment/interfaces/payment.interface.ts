@@ -9,6 +9,7 @@ export interface IPayment {
 	momoTransId?: string;
 	momoErrorCode?: string;
 	momoMessage?: string;
+	expiredAt?: Date;
 	createdAt: Date;
 	updatedAt: Date;
 }

@@ -90,6 +90,23 @@ export class PaymentRepository {
 		}
 	}
 
+	async findExpiredOlderThan(minutes: number): Promise<IPayment[]> {
+		try {
+			const threshold = new Date(Date.now() - minutes * 60 * 1000);
+			const payments = await this.repo.find({
+				where: {
+					status: PaymentStatus.EXPIRED,
+					expiredAt: LessThan(threshold),
+				},
+			});
+			this.logger.debug(`[SQL] SELECT expired payments older than ${minutes}min - count=${payments.length}`);
+			return payments;
+		} catch (error) {
+			this.logger.error(`[SQL_ERROR] SELECT expired older payments failed - error=${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw error;
+		}
+	}
+
 	async update(id: string, updates: Partial<IPayment>): Promise<IPayment | null> {
 		try {
 			const result = await this.repo.update(id, {

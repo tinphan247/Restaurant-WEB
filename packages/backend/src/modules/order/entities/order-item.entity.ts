@@ -9,8 +9,8 @@ export class OrderItemEntity {
     @Column()
     order_id: string;
 
-    @Column()
-    menu_item_id: number;
+    @Column('uuid')
+    menu_item_id: string;
 
     @Column()
     quantity: number;

@@ -1,9 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { OrderItemEntity } from './order-item.entity';
 
 @Entity('orders')
 export class OrderEntity {
-    @PrimaryGeneratedColumn('uuid')
+    @PrimaryColumn('uuid')
     id: string;
 
     @Column()

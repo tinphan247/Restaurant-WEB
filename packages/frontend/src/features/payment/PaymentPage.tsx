@@ -5,6 +5,8 @@ import PaymentStatus from './components/PaymentStatus';
 import PaymentSuccessModal from './components/PaymentSuccessModal';
 import { usePayment } from './hooks/usePayment';
 import { useCart } from '../../contexts/CartContext';
+import type { CartItem } from '../../contexts/CartContext';
+import { orderApi } from '../order/services/order-api';
 
 const createOrderId = () =>
   (crypto.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -20,17 +22,6 @@ export const PaymentMethod = {
 } as const;
 
 export type PaymentMethodType = typeof PaymentMethod[keyof typeof PaymentMethod];
-
-type CartItem = {
-  id: string;
-  menuItemName: string;
-  size?: string;
-  basePrice: number;
-  quantity: number;
-  selectedModifiers?: Record<string, string[]>;
-  selectedModifiersTotal?: number;
-  modifierGroups?: any[];
-};
 
 export default function PaymentPage() {
   const navigate = useNavigate();
@@ -376,7 +367,7 @@ export default function PaymentPage() {
           <div className="w-full max-w-[420px] flex gap-3 p-4">
             <button
               className="flex-1 bg-blue-500 text-white font-bold py-3 rounded-full hover:bg-blue-600 disabled:opacity-50"
-              onClick={() => {
+              onClick={async () => {
                 if (items.length === 0) {
                   alert('Giỏ hàng trống!');
                   return;
@@ -389,7 +380,34 @@ export default function PaymentPage() {
                 }
                 
                 if (selectedPaymentMethod === PaymentMethod.MOMO) {
-                  payWithMomo(resolvedOrderId, grandTotal);
+                  try {
+                    // ✅ STEP 1: Create order in DB first
+                    const orderPayload = {
+                      id: resolvedOrderId, // Use same ID for payment matching
+                      table_id: 1, // Default guest table ID
+                      items: items.map(item => ({
+                        menu_item_id: item.menuItemId,  // Already a UUID string
+                        quantity: item.quantity,
+                        price: getItemPrice(item) / item.quantity,  // Unit price = total price / quantity
+                      })),
+                    };
+                    
+                    // Log each item with actual menuItemId
+                    console.log('Creating order with payload:', orderPayload);
+                    items.forEach((item, idx) => {
+                      console.log(`[ITEM_${idx + 1}] menuItemId="${item.menuItemId}" (type: ${typeof item.menuItemId}), quantity=${item.quantity}, price=${getItemPrice(item) / item.quantity}`);
+                    });
+                    
+                    const orderResponse = await orderApi.create(orderPayload);
+                    console.log('Order created successfully:', orderResponse);
+                    
+                    // ✅ STEP 2: Then initiate payment (now order exists with same ID)
+                    payWithMomo(resolvedOrderId, grandTotal);
+                  } catch (err: any) {
+                    console.error('Order creation error:', err);
+                    const errorMsg = err.message || 'Unknown error';
+                    alert(`Lỗi tạo đơn hàng: ${errorMsg}`);
+                  }
                 } else if (selectedPaymentMethod === PaymentMethod.CASH || selectedPaymentMethod === PaymentMethod.BANK) {
                   alert(`Thanh toán bằng ${selectedPaymentMethod === PaymentMethod.CASH ? 'tiền mặt' : 'chuyển khoản'}. Vui lòng thanh toán tại quầy!`);
                   setTab('status');

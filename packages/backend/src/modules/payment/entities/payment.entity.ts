@@ -50,6 +50,9 @@ export class Payment {
 	@Column('varchar', { name: 'momo_message', length: 500, nullable: true })
 	momoMessage?: string;
 
+	@Column('timestamp', { name: 'expired_at', nullable: true })
+	expiredAt?: Date;
+
 	@CreateDateColumn({ name: 'created_at' })
 	createdAt: Date;
 

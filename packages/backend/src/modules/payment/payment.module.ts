@@ -8,11 +8,12 @@ import { MomoService } from './momo.service';
 import { OrderModule } from '../order/order.module';
 import { Payment } from './entities/payment.entity';
 import { PaymentTimeoutTask } from './tasks/payment-timeout.task';
+import { PaymentCancelExpiredTask } from './tasks/payment-cancel-expired.task';
 
 @Module({
 	imports: [ConfigModule, OrderModule, TypeOrmModule.forFeature([Payment])],
 	controllers: [PaymentController],
-	providers: [PaymentService, PaymentRepository, MomoService, PaymentTimeoutTask],
+	providers: [PaymentService, PaymentRepository, MomoService, PaymentTimeoutTask, PaymentCancelExpiredTask],
 	exports: [PaymentService, MomoService],
 })
 export class PaymentModule {}

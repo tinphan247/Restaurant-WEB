@@ -63,6 +63,16 @@ export class PaymentService {
 		this.logger.log(`[createMomo] START - orderId=${dto.orderId}, amount=${dto.amount}`);
 
 		try {
+			// ✅ VERIFY: Order phải tồn tại trước khi tạo payment
+			if (this.orderService) {
+				try {
+					await this.orderService.findOne(dto.orderId);
+				} catch (error) {
+					this.logger.error(`[createMomo] ORDER_NOT_FOUND - orderId=${dto.orderId}`);
+					throw new NotFoundException(`Order ${dto.orderId} not found`);
+				}
+			}
+
 			// Tạo payment record
 			const payment = await this.create({
 				orderId: dto.orderId,
@@ -228,8 +238,8 @@ export class PaymentService {
 						continue;
 					}
 
-					// Update to expired
-					await this.repo.updateStatus(payment.id, PaymentStatus.EXPIRED);
+					// Update to expired with timestamp
+					await this.repo.update(payment.id, { status: PaymentStatus.EXPIRED, expiredAt: new Date() });
 					updatedPaymentIds.push(payment.id);
 
 					this.logger.log(
@@ -252,6 +262,71 @@ export class PaymentService {
 			};
 		} catch (error) {
 			this.logger.error(`[PAYMENT_CRON_FATAL_ERROR] ${error instanceof Error ? error.message : 'Unknown error'}`);
+			throw error;
+		}
+	}
+
+	/**
+	 * DELAYED CANCEL: Hủy order sau khi payment đã expired ≥ minuteThreshold (mặc định 2 phút)
+	 * Flow: CRON1 set payment = expired → CRON2 (hàm này) hủy order pending sau delay
+	 */
+	async cancelOrdersWithExpiredPayments(minuteThreshold: number = 2): Promise<{ processedCount: number; cancelledOrderIds: string[] }> {
+		const startTime = new Date();
+		this.logger.log(`[ORDER_CANCEL_DELAYED_START] minuteThreshold=${minuteThreshold}, timestamp=${startTime.toISOString()}`);
+
+		const cancelledOrderIds: string[] = [];
+
+		try {
+			// Find payments expired >= minuteThreshold minutes ago
+			const expiredPayments = await this.repo.findExpiredOlderThan(minuteThreshold);
+
+			this.logger.debug(
+				`[ORDER_CANCEL_DELAYED_FOUND] Found ${expiredPayments.length} payments expired >= ${minuteThreshold} minutes`,
+			);
+
+			for (const payment of expiredPayments) {
+				try {
+					if (!this.orderService) {
+						this.logger.warn(`[ORDER_CANCEL_DELAYED] OrderService not available`);
+						continue;
+					}
+
+					const order = await this.orderService.findOne(payment.orderId);
+					if (!order) {
+						this.logger.warn(`[ORDER_CANCEL_DELAYED_NOT_FOUND] Order not found - orderId=${payment.orderId}`);
+						continue;
+					}
+
+					// Only cancel if order is still pending
+					if (order.status === 'pending') {
+						await this.orderService.updateStatus(order.id, 'cancelled');
+						cancelledOrderIds.push(order.id);
+						this.logger.log(
+							`[ORDER_CANCELLED_AFTER_EXPIRED_DELAY] orderId=${order.id}, paymentId=${payment.id}, expiredAt=${payment.expiredAt}, delayMinutes=${minuteThreshold}`,
+						);
+					} else {
+						this.logger.log(
+							`[ORDER_CANCEL_DELAYED_SKIP] Order not pending - orderId=${order.id}, currentStatus=${order.status}`,
+						);
+					}
+				} catch (error) {
+					this.logger.error(
+						`[ORDER_CANCEL_DELAYED_ERROR] Failed to cancel order - paymentId=${payment.id}, orderId=${payment.orderId}, error=${error instanceof Error ? error.message : 'Unknown error'}`,
+					);
+				}
+			}
+
+			const endTime = new Date();
+			this.logger.log(
+				`[ORDER_CANCEL_DELAYED_END] processedCount=${cancelledOrderIds.length}, cancelledOrderIds=${JSON.stringify(cancelledOrderIds)}, timestamp=${endTime.toISOString()}`,
+			);
+
+			return {
+				processedCount: cancelledOrderIds.length,
+				cancelledOrderIds,
+			};
+		} catch (error) {
+			this.logger.error(`[ORDER_CANCEL_DELAYED_FATAL_ERROR] ${error instanceof Error ? error.message : 'Unknown error'}`);
 			throw error;
 		}
 	}

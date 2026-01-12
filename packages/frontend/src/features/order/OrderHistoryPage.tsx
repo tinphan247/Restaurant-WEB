@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { orderApi } from './services/order-api';
 import { OrderDetailModal } from './components/OrderDetailModal';
+import { useOrderSocket } from './hooks/useOrderSocket';
 import type { Order } from './types';
 
 export const OrderHistoryPage = () => {
@@ -8,6 +9,24 @@ export const OrderHistoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const { socket } = useOrderSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    socket.on('new_order', (newOrder: Order) => {
+      setOrders(prev => [newOrder, ...prev]);
+    });
+
+    socket.on('order_status_update', ({ orderId, status }: { orderId: string, status: Order['status'] }) => {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    });
+
+    return () => {
+      socket.off('new_order');
+      socket.off('order_status_update');
+    }
+  }, [socket]);
 
   useEffect(() => {
     const fetchOrders = async () => {

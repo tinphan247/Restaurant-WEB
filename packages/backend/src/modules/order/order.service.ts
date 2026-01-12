@@ -6,6 +6,7 @@ import { OrderEntity } from './entities/order.entity';
 import { OrderItemEntity } from './entities/order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { OrderGateway } from './order.gateway';
 @Injectable()
 export class OrderService {
   private readonly logger = new Logger(OrderService.name);
@@ -15,6 +16,7 @@ export class OrderService {
     private orderRepo: Repository<OrderEntity>,
     @InjectRepository(OrderItemEntity)
     private orderItemRepo: Repository<OrderItemEntity>,
+    private orderGateway: OrderGateway,
   ) {}
 
   async create(createOrderDto: CreateOrderDto) {
@@ -42,7 +44,9 @@ export class OrderService {
       this.logger.log(`  [ITEM_${idx + 1}] menu_item_id=${item.menu_item_id}, quantity=${item.quantity}, price=${item.price}`);
     });
 
-    return this.findOne(savedOrder.id);
+    const fullOrder = await this.findOne(savedOrder.id);
+    this.orderGateway.notifyNewOrder(fullOrder);
+    return fullOrder;
   }
 
   findAll() {
@@ -58,11 +62,15 @@ export class OrderService {
   
   async updateStatus(id: string, status: string) {
       await this.orderRepo.update(id, { status });
+      this.orderGateway.notifyOrderStatusUpdate(id, status);
       return this.findOne(id);
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto) {
       await this.orderRepo.update(id, updateOrderDto);
+      if (updateOrderDto.status) {
+        this.orderGateway.notifyOrderStatusUpdate(id, updateOrderDto.status);
+      }
       return this.findOne(id);
   }
 }

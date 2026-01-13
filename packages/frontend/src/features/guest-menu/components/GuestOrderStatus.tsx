@@ -39,7 +39,7 @@ const aggregateItems = (rawItems: any[]): GuestOrderItem[] => {
   return Object.values(groupedMap);
 };
 
-export const GuestOrderStatus = () => {
+export const GuestOrderStatus = ({ viewMode = 'history' }: { viewMode?: 'history' | 'tracking' }) => {
   // Chúng ta sẽ lưu items trong state theo dạng đã gộp (GuestOrderItem)
   // Nên cần override lại type của items trong state orders nếu cần thiết, 
   // hoặc cứ để any cho items nếu bạn lười sửa type gốc GuestOrder.
@@ -112,17 +112,43 @@ export const GuestOrderStatus = () => {
 
   // --- UI Helpers ---
   const getStatusBadge = (status: string) => {
+    const s = status.toUpperCase();
+    
+    // Used for Tracking View (Raw Status)
+    if (viewMode === 'tracking') {
+       return (
+        <span className="px-2 py-0.5 rounded text-xs font-bold border bg-blue-50 text-blue-700 border-blue-200 uppercase">
+            {s}
+        </span>
+       );
+    }
+
+    // Used for History View (Vietnamese Friendly)
     const colors: Record<string, string> = {
-      pending: 'bg-gray-200 text-gray-700 border-gray-300',
-      confirmed: 'bg-blue-100 text-blue-700 border-blue-200',
-      preparing: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-      ready: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-      completed: 'bg-green-100 text-green-700 border-green-200',
-      cancelled: 'bg-red-100 text-red-700 border-red-200'
+      PENDING: 'bg-gray-200 text-gray-700 border-gray-300',
+      ACCEPTED: 'bg-blue-100 text-blue-800 border-blue-200',
+      REJECTED: 'bg-red-100 text-red-700 border-red-200',
+      PREPARING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      READY: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      SERVED: 'bg-purple-100 text-purple-700 border-purple-200',
+      COMPLETED: 'bg-green-100 text-green-700 border-green-200',
+      CANCELLED: 'bg-red-100 text-red-700 border-red-200'
     };
+    
+    const labels: Record<string, string> = {
+      PENDING: 'Đang gửi',
+      ACCEPTED: 'Đã nhận đơn',
+      REJECTED: 'Từ chối',
+      PREPARING: 'Đang nấu',
+      READY: 'Món đã xong',
+      SERVED: 'Đã phục vụ',
+      COMPLETED: 'Hoàn thành',
+      CANCELLED: 'Đã hủy'
+    };
+
     return (
-        <span className={`px-2 py-0.5 rounded text-xs font-bold border ${colors[status] || 'bg-gray-100'}`}>
-            {status.toUpperCase()}
+        <span className={`px-2 py-0.5 rounded text-xs font-bold border ${colors[s] || 'bg-gray-100'}`}>
+            {labels[s] || s}
         </span>
     );
   };
@@ -134,21 +160,103 @@ export const GuestOrderStatus = () => {
       return <span title="Chưa thanh toán">💰</span>;
   }
 
+  // Helper for Progress Bar
+  const getProgressStep = (status: string) => {
+      const s = status.toUpperCase();
+      switch (s) {
+        case 'PENDING': return 1;
+        case 'ACCEPTED': return 2;
+        case 'PREPARING': return 3;
+        case 'READY': return 4;
+        case 'SERVED': return 5;
+        case 'COMPLETED': return 6;
+        default: return 0; // REJECTED, CANCELLED
+      }
+  };
+
+  const steps = [
+      { step: 1, label: 'Pending' },
+      { step: 2, label: 'Accepted' },
+      { step: 3, label: 'Preparing' },
+      { step: 4, label: 'Ready' },
+      { step: 5, label: 'Served' },
+      { step: 6, label: 'Completed' }
+  ];
+
+  // Filter Active Orders for 'tracking' Tab (ignore completed/rejected/cancelled history)
+  // And take ONLY THE LATEST one for the Tracking view
+  const displayOrders = viewMode === 'tracking' 
+    ? orders
+        .filter(o => !['COMPLETED', 'REJECTED', 'CANCELLED'].includes(o.status.toUpperCase()))
+        .slice(0, 1)
+    : orders;
+
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Đơn hàng của bạn</h2>
+    <div className="p-4 space-y-4 max-w-3xl mx-auto">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">
+            {viewMode === 'tracking' ? 'Theo dõi đơn hàng' : 'Lịch sử đơn hàng'}
+        </h2>
         
-        {orders.length === 0 && (
-            <div className="text-center text-gray-500 py-8">Chưa có đơn hàng nào.</div>
+        {displayOrders.length === 0 && (
+            <div className="text-center text-gray-500 py-8">
+                {viewMode === 'tracking' ? 'Không có đơn đang xử lý.' : 'Chưa có đơn hàng nào trong lịch sử.'}
+            </div>
         )}
 
-        {orders.map(order => (
+        {displayOrders.map(order => {
+            const currentStep = getProgressStep(order.status);
+            const isCancelled = ['REJECTED', 'CANCELLED'].includes(order.status.toUpperCase());
+
+            return (
             <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md">
                 {/* Header: ID + Status */}
                 <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
                     <span className="font-bold text-gray-700">#{order.id.slice(0, 5)}</span>
                     {getStatusBadge(order.status)}
                 </div>
+
+                {/* Progress Bar (Vertical for Tracking View) */}
+                {viewMode === 'tracking' && !isCancelled && (
+                <div className="mb-6 pl-2">
+                    <div className="relative pt-1 pb-1">
+                        {/* Continuous Gray Line */}
+                        <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-gray-200" />
+
+                        {/* Active Blue Line (Approximate height based on progress) */}
+                        <div 
+                           className="absolute left-[5px] top-2 w-0.5 bg-blue-500 transition-all duration-700 ease-out" 
+                           style={{ 
+                               height: `calc(${Math.max(0, Math.min(100, (currentStep - 1) / (steps.length - 1) * 100))}% - 0px)`
+                           }}
+                        />
+
+                        <div className="space-y-8">
+                            {steps.map((s) => {
+                                const isCompleted = s.step <= currentStep;
+                                const isCurrent = s.step === currentStep;
+
+                                return (
+                                <div key={s.step} className="relative flex items-center pl-8">
+                                    {/* Dot Indicator */}
+                                    <div className={`absolute left-0 w-3 h-3 rounded-full border-2 z-10 transition-all duration-300 bg-white ${
+                                        isCompleted 
+                                        ? 'border-blue-500 bg-blue-500 scale-125' 
+                                        : 'border-gray-300'
+                                    } ${isCurrent ? 'ring-4 ring-blue-100' : ''}`} />
+                                    
+                                    {/* Label */}
+                                    <span className={`text-sm font-medium transition-colors ${
+                                        isCompleted ? 'text-gray-800' : 'text-gray-400'
+                                    } ${isCurrent ? 'text-blue-700 font-bold' : ''}`}>
+                                        {s.label}
+                                    </span>
+                                </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+                )}
                 
                 {/* Meta info: Time + Payment */}
                 <div className="flex justify-between text-xs text-gray-500 mb-4">
@@ -194,7 +302,8 @@ export const GuestOrderStatus = () => {
                     </span>
                 </div>
             </div>
-      ))}
+          );
+        })}
     </div>
   );
 };

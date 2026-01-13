@@ -10,10 +10,12 @@ export interface OrderItem {
 }
 
 // Giao diện cho đơn hàng
+export type OrderStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'PREPARING' | 'READY' | 'SERVED' | 'COMPLETED';
+
 export interface Order {
   id: string;
   table_id: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: OrderStatus;
   total_amount: number;
   created_at: string;
   items: OrderItem[];

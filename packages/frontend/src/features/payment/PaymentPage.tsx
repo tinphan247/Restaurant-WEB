@@ -168,8 +168,11 @@ export default function PaymentPage() {
           <TabButton active={tab === 'order'} onClick={() => setTab('order')}>
             Thông tin đơn hàng
           </TabButton>
+          <TabButton active={tab === 'status'} onClick={() => setTab('status')}>
+            Trạng thái
+          </TabButton>
           <TabButton active={tab === 'history'} onClick={() => setTab('history')}>
-            Lịch sử & Trạng thái
+            Lịch sử
           </TabButton>
         </div>
 
@@ -339,10 +342,17 @@ export default function PaymentPage() {
           </div>
         )}
 
+        {/* TAB: STATUS */}
+        {tab === 'status' && (
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+             <GuestOrderStatus viewMode="tracking" />
+          </div>
+        )}
+
         {/* TAB: HISTORY */}
         {tab === 'history' && (
           <div className="flex-1 overflow-y-auto px-4 pb-4">
-             <GuestOrderStatus />
+             <GuestOrderStatus viewMode="history" />
           </div>
         )}
 

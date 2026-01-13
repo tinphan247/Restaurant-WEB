@@ -8,23 +8,14 @@ interface OrderDetailModalProps {
   onClose: () => void;
 }
 
-const ORDER_STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'] as const;
+const ORDER_STATUSES = ['PENDING', 'ACCEPTED', 'REJECTED', 'PREPARING', 'READY', 'SERVED', 'COMPLETED'] as const;
 
 export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose }) => {
   const handleStatusChange = async (newStatus: string) => {
       try {
+          // Normalizes status to uppercase just in case backend expects it
           await orderApi.updateStatus(order.id, newStatus);
-          // Socket will handle the update in the parent list, 
-          // but we might want to update local state here if we wanted immediate feedback,
-          // however, since this is a modal "viewing" the prop passed from parent, 
-          // and parent updates via socket, the prop might not update immediately unless header re-renders.
-          // Actually, if parent state updates, it passes new `order` prop to this modal.
-          // Check OrderHistoryPage: passes `selectedOrder`.
-          // `selectedOrder` depends on `setSelectedOrder(order)`.
-          // `orders` state updates, but `selectedOrder` state is separate?
-          // OrderHistoryPage needs to sync `selectedOrder` with `orders` updates?
-          // Let's assume for now we just fire the API.
-          onClose(); // Close modal after update to refresh view? No, let's keep it open but maybe current implementation requires close to see changes if simple.
+          onClose(); 
       } catch (error) {
           console.error("Failed to update status", error);
           alert("Lỗi cập nhật trạng thái");

@@ -10,7 +10,7 @@ export class OrderEntity {
     @Column()
     table_id: number;
 
-    @Column({ default: 'pending' })
+    @Column({ default: 'PENDING' })
     status: string;
 
     @Column('numeric', { precision: 12, scale: 2, default: 0 })

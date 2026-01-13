@@ -173,8 +173,12 @@ export class PaymentService {
 			// Sync order status
 			if (this.orderService && newStatus === PaymentStatus.SUCCESS) {
 				try {
-					await this.orderService.updateStatus(orderId, 'completed');
-					this.logger.log(`[PAYMENT_ORDER_SYNC] Order status synced - orderId=${orderId}, orderStatus=completed`);
+					// Don't auto-complete order, just notify payment status
+                    // await this.orderService.updateStatus(orderId, 'completed');
+                    if (this.orderService.notifyPaymentStatus) {
+                         this.orderService.notifyPaymentStatus(orderId, newStatus);
+                    }
+					this.logger.log(`[PAYMENT_ORDER_SYNC] Order socket notified - orderId=${orderId}, paymentStatus=${newStatus}`);
 				} catch (error) {
 					this.logger.error(`[PAYMENT_ORDER_SYNC_ERROR] Failed to sync order status - orderId=${orderId}, error=${error instanceof Error ? error.message : 'Unknown error'}`);
 				}

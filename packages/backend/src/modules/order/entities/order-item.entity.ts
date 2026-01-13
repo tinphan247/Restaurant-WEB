@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { OrderEntity } from './order.entity';
+import { MenuItemEntity } from '../../menu-items/entities/menu-item.entity';
 
 @Entity('order_items')
 export class OrderItemEntity {
@@ -27,4 +28,8 @@ export class OrderItemEntity {
     @ManyToOne(() => OrderEntity, (order) => order.items, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'order_id' })
     order: OrderEntity;
+
+    @ManyToOne(() => MenuItemEntity)
+    @JoinColumn({ name: 'menu_item_id' })
+    menuItem: MenuItemEntity;
 }

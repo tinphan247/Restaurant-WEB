@@ -1,13 +1,36 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import type { Order } from '../types';
+import { orderApi } from '../services/order-api';
 
 interface OrderDetailModalProps {
   order: Order;
   onClose: () => void;
 }
 
+const ORDER_STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'] as const;
+
 export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose }) => {
+  const handleStatusChange = async (newStatus: string) => {
+      try {
+          await orderApi.updateStatus(order.id, newStatus);
+          // Socket will handle the update in the parent list, 
+          // but we might want to update local state here if we wanted immediate feedback,
+          // however, since this is a modal "viewing" the prop passed from parent, 
+          // and parent updates via socket, the prop might not update immediately unless header re-renders.
+          // Actually, if parent state updates, it passes new `order` prop to this modal.
+          // Check OrderHistoryPage: passes `selectedOrder`.
+          // `selectedOrder` depends on `setSelectedOrder(order)`.
+          // `orders` state updates, but `selectedOrder` state is separate?
+          // OrderHistoryPage needs to sync `selectedOrder` with `orders` updates?
+          // Let's assume for now we just fire the API.
+          onClose(); // Close modal after update to refresh view? No, let's keep it open but maybe current implementation requires close to see changes if simple.
+      } catch (error) {
+          console.error("Failed to update status", error);
+          alert("Lỗi cập nhật trạng thái");
+      }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -19,7 +42,24 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClo
         <div className="p-6 space-y-4">
           <div className="bg-gray-50 p-4 rounded grid grid-cols-2 gap-2 text-sm">
              <div><span className="font-semibold">Bàn:</span> {order.table_id}</div>
-             <div><span className="font-semibold">Trạng thái:</span> {order.status}</div>
+             <div><span className="font-semibold">Trạng thái:</span> <span className="uppercase font-bold text-blue-600">{order.status}</span></div>
+          </div>
+
+          {/* Status Actions */}
+          <div className="flex flex-wrap gap-2">
+            {ORDER_STATUSES.map((status) => (
+                <button
+                    key={status}
+                    onClick={() => handleStatusChange(status)}
+                    disabled={order.status === status}
+                    className={`px-3 py-1 rounded text-sm font-medium capitalize 
+                        ${order.status === status 
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
+                >
+                    {status}
+                </button>
+            ))}
           </div>
 
           <div>

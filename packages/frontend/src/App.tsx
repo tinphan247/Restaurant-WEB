@@ -25,6 +25,7 @@ import PaymentPage from './features/payment/PaymentPage';
 
 //import tạm để test
 import { ReviewPage } from './features/review/ReviewPage';
+import { GuestOrderStatus } from './features/guest-menu/components/GuestOrderStatus'; // Import component mới
 /* =======================
    PROTECTED ROUTE
 ======================= */
@@ -51,6 +52,7 @@ function App() {
       <Route path="/register" element={<RegisterScreen />} />
       <Route path="/menu" element={<ScanPage />} />
       <Route path="/guest-menu" element={<GuestMenuPage />} />
+      <Route path="/guest/order-status" element={<GuestOrderStatus />} /> {/* Route test mới */}
       <Route path="/payment" element={<PaymentPage />} />
 
       {/* ===== ADMIN ROUTES (PROTECTED) ===== */}

@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
+import { OrderEntity } from '../../order/entities/order.entity';
 
 export enum PaymentStatus {
 	PENDING = 'pending',
@@ -11,6 +12,7 @@ export enum PaymentMethod {
 	STRIPE = 'stripe',
 	MOMO = 'momo',
 	CASH = 'cash',
+	BANK = 'bank',
 }
 
 @Entity('payment')
@@ -23,6 +25,10 @@ export class Payment {
 
 	@Column('uuid', { name: 'order_id' })
 	orderId: string;
+
+	@ManyToOne(() => OrderEntity, (order) => order.payments)
+	@JoinColumn({ name: 'order_id' })
+	order: OrderEntity;
 
 	@Column('numeric', { precision: 12, scale: 2 })
 	amount: number;

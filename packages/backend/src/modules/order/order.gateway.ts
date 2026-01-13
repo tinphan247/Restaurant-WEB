@@ -12,4 +12,8 @@ export class OrderGateway {
   notifyOrderStatusUpdate(orderId: string, status: string) {
     this.server.emit('order_status_update', { orderId, status });
   }
+
+  notifyPaymentStatusUpdate(orderId: string, status: string) {
+    this.server.emit('payment_status_update', { orderId, status });
+  }
 }

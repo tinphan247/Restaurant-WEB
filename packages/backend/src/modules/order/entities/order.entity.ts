@@ -1,5 +1,6 @@
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { OrderItemEntity } from './order-item.entity';
+import { Payment } from '../../payment/entities/payment.entity';
 
 @Entity('orders')
 export class OrderEntity {
@@ -24,4 +25,7 @@ export class OrderEntity {
 
     @OneToMany(() => OrderItemEntity, (item) => item.order)
     items: OrderItemEntity[];
+
+    @OneToMany(() => Payment, (payment) => payment.order)
+    payments: Payment[];
 }

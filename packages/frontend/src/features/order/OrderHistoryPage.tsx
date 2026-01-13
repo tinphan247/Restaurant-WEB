@@ -20,6 +20,7 @@ export const OrderHistoryPage = () => {
 
     socket.on('order_status_update', ({ orderId, status }: { orderId: string, status: Order['status'] }) => {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+      setSelectedOrder(prev => prev && prev.id === orderId ? { ...prev, status } : prev);
     });
 
     return () => {

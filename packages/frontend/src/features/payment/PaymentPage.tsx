@@ -7,6 +7,7 @@ import { usePayment } from './hooks/usePayment';
 import { useCart } from '../../contexts/CartContext';
 import type { CartItem } from '../../contexts/CartContext';
 import { orderApi } from '../order/services/order-api';
+import { GuestOrderStatus } from '../guest-menu/components/GuestOrderStatus';
 
 const createOrderId = () =>
   (crypto.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -29,7 +30,7 @@ export default function PaymentPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { items: cartItems, updateQuantity, removeItem, getItemPrice } = useCart();
 
-  const { payWithMomo, status, error, payment, loading, MENU_RETURN_KEY, setReturnUrl } = usePayment();
+  const { pay, payWithMomo, status, error, payment, loading, MENU_RETURN_KEY, setReturnUrl } = usePayment();
 
   const {
     orderId,
@@ -163,15 +164,12 @@ export default function PaymentPage() {
         </div>
 
         {/* TABS */}
-        <div className="flex gap-2 px-4 py-3">
+        <div className="flex justify-center gap-2 px-4 py-3">
           <TabButton active={tab === 'order'} onClick={() => setTab('order')}>
             Thông tin đơn hàng
           </TabButton>
-          <TabButton active={tab === 'status'} onClick={() => setTab('status')}>
-            Trạng thái
-          </TabButton>
           <TabButton active={tab === 'history'} onClick={() => setTab('history')}>
-            Lịch sử
+            Lịch sử & Trạng thái
           </TabButton>
         </div>
 
@@ -341,85 +339,87 @@ export default function PaymentPage() {
           </div>
         )}
 
-        {/* TAB: STATUS */}
-        {tab === 'status' && (
-          <div className="flex-1 p-4">
-            <PaymentStatus status={status} error={error} />
-            {payment && (
-              <div className="mt-4 bg-gray-50 p-3 rounded text-xs">
-                <div>Mã: {payment.id}</div>
-                <div>Trạng thái: {payment.status}</div>
-                <div>Phương thức: {payment.method}</div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB: ADD */}
+        {/* TAB: HISTORY */}
         {tab === 'history' && (
-          <div className="flex-1 p-4 text-center text-gray-400">
-            Tính năng lich sử đang được phát triển.
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+             <GuestOrderStatus />
           </div>
         )}
 
-        {/* FOOTER */}
-        <div className="fixed bottom-0 left-0 w-full flex justify-center bg-white border-t">
-          <div className="w-full max-w-[420px] flex gap-3 p-4">
-            <button
-              className="flex-1 bg-blue-500 text-white font-bold py-3 rounded-full hover:bg-blue-600 disabled:opacity-50"
-              onClick={async () => {
-                if (items.length === 0) {
-                  alert('Giỏ hàng trống!');
-                  return;
-                }
-                
-                const resolvedOrderId = orderIdRef.current;
-                if (!resolvedOrderId) {
-                  alert('Không tìm thấy mã đơn hàng!');
-                  return;
-                }
-                
-                if (selectedPaymentMethod === PaymentMethod.MOMO) {
-                  try {
-                    // ✅ STEP 1: Create order in DB first
-                    const orderPayload = {
-                      id: resolvedOrderId, // Use same ID for payment matching
-                      table_id: 1, // Default guest table ID
-                      items: items.map(item => ({
-                        menu_item_id: item.menuItemId,  // Already a UUID string
-                        quantity: item.quantity,
-                        price: getItemPrice(item) / item.quantity,  // Unit price = total price / quantity
-                      })),
-                    };
-                    
-                    // Log each item with actual menuItemId
-                    console.log('Creating order with payload:', orderPayload);
-                    items.forEach((item, idx) => {
-                      console.log(`[ITEM_${idx + 1}] menuItemId="${item.menuItemId}" (type: ${typeof item.menuItemId}), quantity=${item.quantity}, price=${getItemPrice(item) / item.quantity}`);
-                    });
-                    
-                    const orderResponse = await orderApi.create(orderPayload);
-                    console.log('Order created successfully:', orderResponse);
-                    
-                    // ✅ STEP 2: Then initiate payment (now order exists with same ID)
-                    payWithMomo(resolvedOrderId, grandTotal);
-                  } catch (err: any) {
-                    console.error('Order creation error:', err);
-                    const errorMsg = err.message || 'Unknown error';
-                    alert(`Lỗi tạo đơn hàng: ${errorMsg}`);
+        {/* FOOTER - PAYMENT SECTION */}
+        {/* Chỉ hiện footer khi ở tab 'order' và có món trong giỏ */}
+        {tab === 'order' && items.length > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 bg-white border-t p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+            <div className="flex gap-3">
+              <button
+                className="flex-1 bg-blue-500 text-white font-bold py-3 rounded-full hover:bg-blue-600 disabled:opacity-50"
+                onClick={async () => {
+                  if (items.length === 0) {
+                    alert('Giỏ hàng trống!');
+                    return;
                   }
-                } else if (selectedPaymentMethod === PaymentMethod.CASH || selectedPaymentMethod === PaymentMethod.BANK) {
-                  alert(`Thanh toán bằng ${selectedPaymentMethod === PaymentMethod.CASH ? 'tiền mặt' : 'chuyển khoản'}. Vui lòng thanh toán tại quầy!`);
-                  setTab('status');
-                }
-              }}
-              disabled={loading || items.length === 0}
-              title="Thanh toán"
-            >
-              {`Thanh toán ${grandTotal.toLocaleString()}`}
-            </button>
+                  
+                  const resolvedOrderId = orderIdRef.current;
+                  if (!resolvedOrderId) {
+                    alert('Không tìm thấy mã đơn hàng!');
+                    return;
+                  }
+                  
+                  // Common Payload
+                  const orderPayload = {
+                    id: resolvedOrderId,
+                    table_id: 1, // Default guest table ID
+                    items: items.map((item) => ({
+                      menu_item_id: item.menuItemId,
+                      quantity: item.quantity,
+                      price: getItemPrice(item) / item.quantity,
+                      notes: formatModifiers(item).join(', '),
+                    })),
+                  };
+
+                  if (selectedPaymentMethod === PaymentMethod.MOMO) {
+                    try {
+                      console.log('Creating order (MOMO flow)...');
+                      const orderResponse = await orderApi.create(orderPayload);
+                      console.log('Order created:', orderResponse);
+                      
+                      payWithMomo(resolvedOrderId, grandTotal);
+                    } catch (err: any) {
+                      console.error('Order creation error:', err);
+                      alert(`Lỗi tạo đơn hàng: ${err.message || 'Unknown code'}`);
+                    }
+                  } 
+                  else {
+                    // CASH / BANK
+                    try {
+                      console.log('Creating order (CASH/BANK flow)...');
+                      await orderApi.create(orderPayload);
+                      
+                      // Create Payment Record (Pending)
+                      await pay({
+                        orderId: resolvedOrderId,
+                        amount: grandTotal,
+                        method: selectedPaymentMethod
+                      });
+                      
+                      alert(`Đơn hàng đã gửi thành công! Vui lòng thanh toán ${selectedPaymentMethod === PaymentMethod.CASH ? 'tiền mặt' : 'chuyển khoản'} tại quầy.`);
+                      setTab('history');
+                      
+                      // Optional: Clear cart here if needed
+                    } catch (err: any) {
+                      console.error('Order process error:', err);
+                      alert(`Lỗi xử lý: ${err.message}`);
+                    }
+                  }
+                }}
+                disabled={loading || items.length === 0}
+                title="Thanh toán"
+              >
+                {`Thanh toán ${grandTotal.toLocaleString()}`}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

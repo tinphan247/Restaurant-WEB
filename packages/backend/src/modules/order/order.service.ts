@@ -50,16 +50,23 @@ export class OrderService {
   }
 
   findAll() {
-    return this.orderRepo.find({ relations: ['items'] });
+    return this.orderRepo.find({ relations: ['items', 'items.menuItem', 'payments'] });
   }
 
   async findOne(id: string) {
-    const order = await this.orderRepo.findOne({ where: { id }, relations: ['items'] });
+    const order = await this.orderRepo.findOne({ 
+      where: { id }, 
+      relations: ['items', 'items.menuItem', 'payments'] 
+    });
     if (!order) 
       throw new NotFoundException(`Order ${id} not found`);
     return order;
   }
   
+  notifyPaymentStatus(orderId: string, status: string) {
+    this.orderGateway.notifyPaymentStatusUpdate(orderId, status);
+  }
+
   async updateStatus(id: string, status: string) {
       await this.orderRepo.update(id, { status });
       this.orderGateway.notifyOrderStatusUpdate(id, status);

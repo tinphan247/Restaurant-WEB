@@ -182,9 +182,6 @@ export default function PaymentPage() {
           <TabButton active={tab === 'status'} onClick={() => setTab('status')}>
             Trạng thái
           </TabButton>
-          <TabButton active={tab === 'history'} onClick={() => setTab('history')}>
-            Lịch sử
-          </TabButton>
         </div>
 
         {/* TAB: ORDER */}
@@ -360,12 +357,6 @@ export default function PaymentPage() {
           </div>
         )}
 
-        {/* TAB: HISTORY */}
-        {tab === 'history' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
-             <GuestOrderStatus viewMode="history" />
-          </div>
-        )}
 
         {/* FOOTER - PAYMENT SECTION */}
         {/* Chỉ hiện footer khi ở tab 'order' và có món trong giỏ */}
@@ -435,7 +426,7 @@ export default function PaymentPage() {
                       });
                       
                       alert(`Đơn hàng đã gửi thành công! Vui lòng thanh toán ${selectedPaymentMethod === PaymentMethod.CASH ? 'tiền mặt' : 'chuyển khoản'} tại quầy.`);
-                      setTab('history');
+                      setTab('status');
                       
                       // Optional: Clear cart here if needed
                     } catch (err: any) {

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useOrderSocket } from '../../order/hooks/useOrderSocket'; 
 import { orderApi } from '../../order/services/order-api';
 import { getCurrentUser } from '../../auth/hooks/useAuth';
-// Lưu ý: Đảm bảo import đúng đường dẫn type của bạn
 import type { GuestOrder } from '../types/guest-order';
 
 // 1. Định nghĩa lại Interface cho Item hiển thị (đã gộp)

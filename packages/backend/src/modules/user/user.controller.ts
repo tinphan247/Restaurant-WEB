@@ -11,17 +11,21 @@ export class UserController {
 
   @Get('profile')
   async getProfile(@Request() req) {
-    return await this.userService.getProfile(req.user.id);
+    const userId = req.user.id || req.user.sub;
+    return await this.userService.getProfile(userId);
   }
 
   @Put('profile')
   async updateProfile(@Request() req, @Body() body) {
-    return await this.userService.updateProfile(req.user.id, body);
+
+    const userId = req.user.id || req.user.sub;
+    return await this.userService.updateProfile(userId, body);
   }
 
   @Post('change-password')
   async changePassword(@Request() req, @Body() body) {
-    return await this.userService.changePassword(req.user.id, body);
+    const userId = req.user.id || req.user.sub;
+    return await this.userService.changePassword(userId, body);
   }
 
   @Post('profile/avatar')
@@ -30,7 +34,8 @@ export class UserController {
     if (!file) {
       throw new BadRequestException('Vui lòng tải lên một tệp hình ảnh');
     }
-    const updatedProfile = await this.userService.uploadAvatar(req.user.id, file);
+    const userId = req.user.id || req.user.sub;
+    const updatedProfile = await this.userService.uploadAvatar(userId, file);
     return {
       statusCode: 200,
       message: 'Tải lên avatar thành công',

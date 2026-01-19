@@ -21,7 +21,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   /**
    * Generate a secure random token for email verification
@@ -188,6 +188,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         isVerified: user.isVerified,
+        avatar: user.avatar,
       },
     };
   }

@@ -57,7 +57,7 @@ export default function PaymentPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>(PaymentMethod.MOMO);
   const currentGuestUser = (() => {
     try {
-      const guestStr = localStorage.getItem('guest_user');
+      const guestStr = localStorage.getItem('user');
       return guestStr ? JSON.parse(guestStr) : null;
     } catch {
       return null;
@@ -296,8 +296,8 @@ export default function PaymentPage() {
                     type="button"
                     onClick={() => setSelectedPaymentMethod(PaymentMethod.CASH)}
                     className={`w-full flex items-center gap-3 p-3 border rounded-lg transition-all ${selectedPaymentMethod === PaymentMethod.CASH
-                        ? 'border-blue-500 bg-blue-50 shadow'
-                        : 'border-gray-200 bg-white'
+                      ? 'border-blue-500 bg-blue-50 shadow'
+                      : 'border-gray-200 bg-white'
                       }`}
                   >
                     <Banknote className="w-5 h-5 text-green-600" />
@@ -315,8 +315,8 @@ export default function PaymentPage() {
                     type="button"
                     onClick={() => setSelectedPaymentMethod(PaymentMethod.BANK)}
                     className={`w-full flex items-center gap-3 p-3 border rounded-lg transition-all ${selectedPaymentMethod === PaymentMethod.BANK
-                        ? 'border-blue-500 bg-blue-50 shadow'
-                        : 'border-gray-200 bg-white'
+                      ? 'border-blue-500 bg-blue-50 shadow'
+                      : 'border-gray-200 bg-white'
                       }`}
                   >
                     <Landmark className="w-5 h-5 text-blue-600" />
@@ -334,8 +334,8 @@ export default function PaymentPage() {
                     type="button"
                     onClick={() => setSelectedPaymentMethod(PaymentMethod.MOMO)}
                     className={`w-full flex items-center gap-3 p-3 border rounded-lg transition-all ${selectedPaymentMethod === PaymentMethod.MOMO
-                        ? 'border-blue-500 bg-blue-50 shadow'
-                        : 'border-gray-200 bg-white'
+                      ? 'border-blue-500 bg-blue-50 shadow'
+                      : 'border-gray-200 bg-white'
                       }`}
                   >
                     <Smartphone className="w-5 h-5 text-pink-500" />
@@ -465,8 +465,8 @@ function TabButton({
     <button
       onClick={onClick}
       className={`px-3 py-1 rounded-full text-sm font-medium ${active
-          ? 'bg-blue-400 text-white'
-          : 'bg-gray-100 text-gray-700'
+        ? 'bg-blue-400 text-white'
+        : 'bg-gray-100 text-gray-700'
         }`}
     >
       {children}

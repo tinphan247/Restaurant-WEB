@@ -20,7 +20,7 @@ export class UserService {
   async findOneByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'name', 'role', 'isVerified'], // Ép kiểu lấy password ở đây
+      select: ['id', 'email', 'password', 'name', 'role', 'isVerified', 'avatar'], // Ép kiểu lấy password ở đây
     });
   }
 
@@ -92,15 +92,25 @@ export class UserService {
 
   // Cập nhật thông tin profile cho user đang đăng nhập
   async updateProfile(userId: string, updateProfileDto: { fullName: string; displayName?: string }): Promise<Partial<User>> {
+    console.log('[UserService] updateProfile - Start. UserId:', userId, 'Dto:', updateProfileDto);
+
+    // Find User
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
+      console.error('[UserService] updateProfile - User NOT FOUND for ID:', userId);
       throw new NotFoundException('User not found');
     }
+    console.log('[UserService] updateProfile - User Found:', { id: user.id, email: user.email, name: user.name });
+
+    // Update
     user.name = updateProfileDto.fullName;
     if (updateProfileDto.displayName) {
       user.displayName = updateProfileDto.displayName;
     }
+
+    // Save
     const updatedUser = await this.userRepository.save(user);
+
     const { password, verificationToken, ...result } = updatedUser;
     return result;
   }

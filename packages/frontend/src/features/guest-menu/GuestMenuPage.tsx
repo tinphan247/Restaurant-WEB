@@ -8,7 +8,7 @@ import { useCart } from '../../contexts/CartContext';
 import { LoginScreen } from '../auth/LoginScreen';
 import { GuestOrderStatus } from './components/GuestOrderStatus';
 import UserProfilePage from './components/UserProfilePage';
-// Guest user chỉ lấy từ localStorage key 'guest_user'
+// Guest user chỉ lấy từ localStorage key 'user'
 import { useNavigate } from 'react-router-dom';
 
 const createOrderId = () =>
@@ -85,7 +85,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
   const [activeTab, setActiveTab] = useState<'menu' | 'cart' | 'profile'>('menu');
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const guestStr = localStorage.getItem('guest_user');
+      const guestStr = localStorage.getItem('user');
       return guestStr ? JSON.parse(guestStr) : null;
     } catch {
       return null;
@@ -156,12 +156,17 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
   };
 
   // Callback khi đăng nhập thành công
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = (user?: any) => {
+    if (user) {
+      setCurrentUser(user);
+      setIsLoggedIn(true);
+      return;
+    }
     try {
       const guestStr = localStorage.getItem('guest_user');
-      const user = guestStr ? JSON.parse(guestStr) : null;
-      setCurrentUser(user);
-      setIsLoggedIn(Boolean(user));
+      const storedUser = guestStr ? JSON.parse(guestStr) : null;
+      setCurrentUser(storedUser);
+      setIsLoggedIn(Boolean(storedUser));
     } catch {
       setCurrentUser(null);
       setIsLoggedIn(false);
@@ -172,8 +177,9 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
-    localStorage.removeItem('guest_user');
+    localStorage.removeItem('user');
     localStorage.removeItem('access_token_GUEST');
+    localStorage.removeItem('access_token_USER'); // Clear USER token to prevent identity swap issues
   };
 
   if (isLoading) {
@@ -299,7 +305,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
                         onProfileUpdate={(updatedUser) => {
                           const newUser = { ...currentUser, ...updatedUser };
                           setCurrentUser(newUser);
-                          localStorage.setItem('guest_user', JSON.stringify(newUser));
+                          localStorage.setItem('user', JSON.stringify(newUser));
                         }}
                       />
                     )}
@@ -309,11 +315,11 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
             </div>
           ) : (
             <LoginScreen onLoginSuccess={(user) => {
-              // Lưu thông tin guest vào 'guest_user' thay vì 'user'
+              // Lưu thông tin guest vào 'user' thay vì 'guest_user'
               if (user) {
-                localStorage.setItem('guest_user', JSON.stringify(user));
+                localStorage.setItem('user', JSON.stringify(user));
               }
-              handleLoginSuccess();
+              handleLoginSuccess(user);
             }} />
           )}
           {isLoggedIn && (
@@ -459,7 +465,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
       {isLoggedIn && activeTab === 'profile' && (
         <button
           onClick={handleLogout}
-          className="group fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 flex items-center gap-3 px-4 py-3 bg-white border border-red-200 text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300 shadow-lg"
+          className="group fixed bottom-16 right-6 md:bottom-8 md:right-8 z-50 flex items-center gap-3 px-4 py-3 bg-white border border-red-200 text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300 shadow-lg"
           title="Đăng xuất khỏi hệ thống"
         >
           <div className="p-1 bg-red-50 rounded-full group-hover:bg-red-500 transition-colors">

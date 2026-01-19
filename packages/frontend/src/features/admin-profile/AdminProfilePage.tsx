@@ -57,23 +57,15 @@ export const AdminProfilePage: React.FC<AdminProfilePageProps> = ({ profileOverr
       setUpdatedProfile(null);
     }
   }, [profileOverride]);
-  // Log avatar URL mỗi khi displayProfile thay đổi
-  useEffect(() => {
-    const displayProfile = updatedProfile || profile;
-    if (displayProfile) {
-      console.log('displayProfile object on profile page:', displayProfile);
-      console.log('Avatar URL on profile page:', displayProfile.avatar);
-    }
-  }, [updatedProfile, profile]);
+
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data: { fullName: string; displayName?: string }) =>
       mode === 'guest' ? userProfileApi.updateProfile(data) : adminProfileApi.updateProfile(data),
-    onSuccess: (response) => {
+    onSuccess: (response: any) => {
       if (response.data) {
         setProfile(response.data);
         setUpdatedProfile(response.data); // Lưu user mới cập nhật
-        console.log('Updated profile data:', response.data);
         // 🔥 Quan trọng
         queryClient.invalidateQueries({
           queryKey: [mode === 'guest' ? 'user-profile' : 'admin-profile'],
@@ -115,9 +107,7 @@ export const AdminProfilePage: React.FC<AdminProfilePageProps> = ({ profileOverr
   const uploadAvatarMutation = useMutation({
     mutationFn: (file: File) => mode === 'guest' ? userProfileApi.uploadAvatar(file) : adminProfileApi.uploadAvatar(file),
     onSuccess: (response) => {
-      console.log('Upload avatar response:', response);
       if (response.data && response.data.avatar) {
-        console.log('Avatar URL after upload:', response.data.avatar);
         setProfile((prev) => prev ? { ...prev, avatar: response.data.avatar } : prev);
         setUpdatedProfile((prev) => prev ? { ...prev, avatar: response.data.avatar } : prev);
         setEditingSection(null);
@@ -136,8 +126,6 @@ export const AdminProfilePage: React.FC<AdminProfilePageProps> = ({ profileOverr
         setTimeout(() => {
           setSuccessMessages(prev => ({ ...prev, avatar: '' }));
         }, 3000);
-      } else {
-        console.warn('No avatar URL found in response:', response);
       }
     },
     onError: (error: any) => {

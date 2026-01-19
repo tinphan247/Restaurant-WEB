@@ -4,10 +4,10 @@ import { getAccessTokenByRole } from '../features/auth/hooks/useAuth';
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://restaurant-web-five-wine.vercel.app';
 // Lưu ý: getProfile thường nằm ở /api/auth/profile, còn các tính năng admin nằm ở /api/admin/profile
 const ADMIN_API_BASE = `${BASE_URL}/api/admin/profile`;
-const AUTH_API_BASE = `${BASE_URL}/api/auth/profile`;
+
 
 const getAuthHeaders = () => {
-  const token = getAccessTokenByRole('ADMIN'); 
+  const token = getAccessTokenByRole('ADMIN');
   return {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -32,7 +32,8 @@ export const adminProfileApi = {
    */
   getProfile: async () => {
     // Phải thêm getAuthHeaders() để Backend biết bạn là ai
-    return axios.get(`${AUTH_API_BASE}`, getAuthHeaders());
+    // Return object { data: Profile } to match component expectation (profileData.data)
+    return axios.get(`${ADMIN_API_BASE}`, getAuthHeaders()).then(res => ({ data: res.data.data }));
   },
 
   /**
@@ -58,7 +59,7 @@ export const adminProfileApi = {
   uploadAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);
-    
+
     const authConfig = getAuthHeaders();
     return axios.post(`${ADMIN_API_BASE}/avatar`, formData, {
       headers: {

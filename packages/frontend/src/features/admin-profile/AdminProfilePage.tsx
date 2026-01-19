@@ -27,9 +27,10 @@ type EditingSection = 'profile' | 'avatar' | 'password' | 'email' | null;
 interface AdminProfilePageProps {
   profileOverride?: UserProfile;
   mode?: 'admin' | 'guest';
+  onProfileUpdate?: (newProfile: UserProfile) => void;
 }
 
-export const AdminProfilePage: React.FC<AdminProfilePageProps> = ({ profileOverride, mode = 'admin' }) => {
+export const AdminProfilePage: React.FC<AdminProfilePageProps> = ({ profileOverride, mode = 'admin', onProfileUpdate }) => {
   // Nếu có profileOverride thì dùng, không thì lấy từ API như cũ
   const [profile, setProfile] = useState<UserProfile | null>(profileOverride || null);
   const [updatedProfile, setUpdatedProfile] = useState<UserProfile | null>(null); // NEW
@@ -48,6 +49,14 @@ export const AdminProfilePage: React.FC<AdminProfilePageProps> = ({ profileOverr
       setUpdatedProfile(null); // Reset updatedProfile khi nhận data mới từ API
     }
   }, [profileData, profileOverride]);
+
+  // Sync profileOverride when it changes
+  useEffect(() => {
+    if (profileOverride) {
+      setProfile(profileOverride);
+      setUpdatedProfile(null);
+    }
+  }, [profileOverride]);
   // Log avatar URL mỗi khi displayProfile thay đổi
   useEffect(() => {
     const displayProfile = updatedProfile || profile;
@@ -71,6 +80,7 @@ export const AdminProfilePage: React.FC<AdminProfilePageProps> = ({ profileOverr
         });
 
         setEditingSection(null);
+        onProfileUpdate?.(response.data);
       }
     },
     onError: (error: any) => {
@@ -115,6 +125,14 @@ export const AdminProfilePage: React.FC<AdminProfilePageProps> = ({ profileOverr
           ...prev,
           avatar: 'Avatar đã được cập nhật thành công!',
         }));
+
+        // Notify parent about update
+        if (response.data && response.data.avatar) {
+          const currentProfile = updatedProfile || profile;
+          if (currentProfile) {
+            onProfileUpdate?.({ ...currentProfile, avatar: response.data.avatar });
+          }
+        }
         setTimeout(() => {
           setSuccessMessages(prev => ({ ...prev, avatar: '' }));
         }, 3000);

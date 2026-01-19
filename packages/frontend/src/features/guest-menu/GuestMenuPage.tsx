@@ -12,11 +12,11 @@ import UserProfilePage from './components/UserProfilePage';
 import { useNavigate } from 'react-router-dom';
 
 const createOrderId = () =>
-  (crypto.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  }));
+(crypto.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+  const r = (Math.random() * 16) | 0;
+  const v = c === 'x' ? r : (r & 0x3) | 0x8;
+  return v.toString(16);
+}));
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://restaurant-web-five-wine.vercel.app';
 
 export interface GuestMenuItem {
@@ -121,20 +121,20 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
     if (filters.sort) params.append('sort', filters.sort);
     if (filters.order) params.append('order', filters.order);
     if (filters.chefRecommended) params.append('chefRecommended', 'true');
-   // if (authToken) params.append('token', authToken);
+    // if (authToken) params.append('token', authToken);
     params.append('page', page.toString());
     params.append('limit', '20');
     //params.append('restaurantId', '00000000-0000-0000-0000-000000000000');
-    
+
     try {
       const response = await axios.get(`${API_BASE_URL}/api/menu?${params.toString()}`);
       console.log('Menu API Response:', response.data);
-      
+
       // Validate response structure
       if (!response.data || !response.data.data || !response.data.data.categories) {
         throw new Error('Invalid response format from menu API');
       }
-      
+
       return response.data;
     } catch (err: any) {
       console.error('Menu fetch error:', err);
@@ -285,15 +285,24 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
               {/* Modal hiển thị chi tiết profile */}
               {showProfileModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                  <div className="bg-white rounded-lg shadow-lg p-2 w-full max-w-2xl relative">
+                  <div className="bg-white rounded-lg shadow-lg p-2 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
                     <button
                       onClick={() => setShowProfileModal(false)}
-                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl"
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl z-10"
                       aria-label="Đóng"
                     >
                       ×
                     </button>
-                    <UserProfilePage user={currentUser} />
+                    {currentUser && (
+                      <UserProfilePage
+                        user={currentUser}
+                        onProfileUpdate={(updatedUser) => {
+                          const newUser = { ...currentUser, ...updatedUser };
+                          setCurrentUser(newUser);
+                          localStorage.setItem('guest_user', JSON.stringify(newUser));
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -322,53 +331,53 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
 
       {/* Menu Content */}
       {activeTab === 'menu' && (
-      <div className="max-w-7xl mx-auto px-4 pb-12">
-        {menuData.data.categories.map((category: GuestMenuCategory) => (
-          <div key={category.id} className="mb-12">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{category.name}</h2>
-              {category.description && (
-                <p className="text-gray-600 mt-1">{category.description}</p>
+        <div className="max-w-7xl mx-auto px-4 pb-12">
+          {menuData.data.categories.map((category: GuestMenuCategory) => (
+            <div key={category.id} className="mb-12">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">{category.name}</h2>
+                {category.description && (
+                  <p className="text-gray-600 mt-1">{category.description}</p>
+                )}
+              </div>
+
+              {category.items.length === 0 ? (
+                <p className="text-gray-500 italic">No items in this category.</p>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {category.items.map((item) => (
+                    <MenuItemCard key={item.id} item={item} tableInfo={tableInfo} />
+                  ))}
+                </div>
               )}
             </div>
+          ))}
 
-            {category.items.length === 0 ? (
-              <p className="text-gray-500 italic">No items in this category.</p>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {category.items.map((item) => (
-                  <MenuItemCard key={item.id} item={item} tableInfo={tableInfo} />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {/* Pagination */}
-        {menuData.total > 20 && (
-          <div className="flex justify-center items-center gap-4 mt-8">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-4 py-2 bg-white border rounded hover:bg-gray-50 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="text-gray-700">
-              Page {page} of {Math.ceil(menuData.total / 20)}
-            </span>
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= Math.ceil(menuData.total / 20)}
-              className="px-4 py-2 bg-white border rounded hover:bg-gray-50 disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        )}
-      </div>
+          {/* Pagination */}
+          {menuData.total > 20 && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 bg-white border rounded hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-gray-700">
+                Page {page} of {Math.ceil(menuData.total / 20)}
+              </span>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= Math.ceil(menuData.total / 20)}
+                className="px-4 py-2 bg-white border rounded hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
       )}
-      
+
       {/* Floating Cart Button - Desktop only */}
       <button
         onClick={() => {
@@ -399,9 +408,8 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
             onClick={() => {
               setActiveTab('menu');
             }}
-            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-              activeTab === 'menu' ? 'text-blue-600' : 'text-gray-500'
-            }`}
+            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${activeTab === 'menu' ? 'text-blue-600' : 'text-gray-500'
+              }`}
           >
             <Home className="w-6 h-6" />
             <span className="text-xs mt-1">Trang chủ</span>
@@ -421,9 +429,8 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
                 },
               });
             }}
-            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors relative ${
-              activeTab === 'cart' ? 'text-blue-600' : 'text-gray-500'
-            }`}
+            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors relative ${activeTab === 'cart' ? 'text-blue-600' : 'text-gray-500'
+              }`}
           >
             <ShoppingCart className="w-6 h-6" />
             {itemCount > 0 && (
@@ -439,9 +446,8 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
             onClick={() => {
               setActiveTab('profile');
             }}
-            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-              activeTab === 'profile' ? 'text-blue-600' : 'text-gray-500'
-            }`}
+            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${activeTab === 'profile' ? 'text-blue-600' : 'text-gray-500'
+              }`}
           >
             <User className="w-6 h-6" />
             <span className="text-xs mt-1">Cá nhân</span>
@@ -451,7 +457,7 @@ function GuestMenuContent({ tableInfo, authToken }: GuestMenuPageProps) {
 
       {/* Logout Button - Hiển thị ở góc phải khi đang ở profile tab và đã đăng nhập */}
       {isLoggedIn && activeTab === 'profile' && (
-        <button 
+        <button
           onClick={handleLogout}
           className="group fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 flex items-center gap-3 px-4 py-3 bg-white border border-red-200 text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all duration-300 shadow-lg"
           title="Đăng xuất khỏi hệ thống"

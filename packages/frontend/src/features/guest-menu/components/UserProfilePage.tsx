@@ -5,9 +5,10 @@ import type { UserProfile } from '../types/user-profile';
 // Nhận dữ liệu user từ props
 interface UserProfilePageProps {
   user: UserProfile;
+  onProfileUpdate?: (user: UserProfile) => void;
 }
 
-const UserProfilePage: React.FC<UserProfilePageProps> = ({ user }) => {
+const UserProfilePage: React.FC<UserProfilePageProps> = ({ user, onProfileUpdate }) => {
   // Chuyển đổi dữ liệu user thành dạng UserProfile cho AdminProfilePage
   const userProfile = {
     id: user.id,
@@ -22,7 +23,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ user }) => {
   };
 
   // Truyền dữ liệu vào AdminProfilePage qua props (cần chỉnh lại AdminProfilePage để nhận props profile)
-  return <AdminProfilePage profileOverride={userProfile} mode="guest" />;
+  return <AdminProfilePage profileOverride={userProfile} mode="guest" onProfileUpdate={onProfileUpdate} />;
 };
 
 export default UserProfilePage;

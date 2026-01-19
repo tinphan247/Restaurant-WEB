@@ -8,9 +8,13 @@ import { UserService } from './user.service';
 
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), forwardRef(() => AuthModule)], // Dùng forwardRef để tránh circular dependency
+  imports: [
+    TypeOrmModule.forFeature([User]),
+    forwardRef(() => AuthModule),
+    require('../../common/cloudinary/cloudinary.module').CloudinaryModule,
+  ], // Dùng forwardRef để tránh circular dependency
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService], // Export để AuthModule có thể sử dụng UserService
 })
-export class UserModule {}
+export class UserModule { }

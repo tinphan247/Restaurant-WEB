@@ -17,11 +17,24 @@ export const userProfileApi = {
       },
     });
   },
-  changePassword: (data: { oldPassword: string; newPassword: string; confirmNewPassword: string }) => axios.post('/api/user/change-password', data),
-  changeEmail: (data: { newEmail: string; password: string }) => axios.post('/api/user/change-email', data),
+  changePassword: (data: { oldPassword: string; newPassword: string; confirmNewPassword: string }) => {
+    const token = localStorage.getItem('access_token_GUEST') || localStorage.getItem('access_token_USER');
+    return axios.post('/api/user/change-password', data, {
+      headers: { Authorization: token ? `Bearer ${token}` : '' },
+    });
+  },
+  changeEmail: (data: { newEmail: string; password: string }) => {
+    const token = localStorage.getItem('access_token_GUEST') || localStorage.getItem('access_token_USER');
+    return axios.post('/api/user/change-email', data, {
+      headers: { Authorization: token ? `Bearer ${token}` : '' },
+    });
+  },
   uploadAvatar: (file: File) => {
+    const token = localStorage.getItem('access_token_GUEST') || localStorage.getItem('access_token_USER');
     const formData = new FormData();
     formData.append('avatar', file);
-    return axios.post('/api/user/profile/avatar', formData);
+    return axios.post('/api/user/profile/avatar', formData, {
+      headers: { Authorization: token ? `Bearer ${token}` : '' },
+    }).then(res => res.data);
   },
 };

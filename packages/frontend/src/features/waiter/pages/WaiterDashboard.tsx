@@ -75,8 +75,22 @@ export const WaiterDashboard = () => {
     const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
     const socket = io(`${wsUrl}/waiter`, { path: '/socket.io' });
 
-    socket.on('newOrder', fetchOrders);
-    socket.on('order_status_update', fetchOrders);
+    socket.on('newOrder', (order: Order) => {
+      setOrders(prev => {
+        if (prev.some(o => o.id === order.id)) return prev;
+        return [order, ...prev];
+      });
+    });
+
+    socket.on('order_status_update', ({ orderId, status }: { orderId: string; status: any }) => {
+      setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status } : o)));
+      setSelectedOrder(prev => (prev && prev.id === orderId ? { ...prev, status } : prev));
+    });
+
+    socket.on('orderReady', ({ orderId }: { orderId: string }) => {
+      setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: 'READY' } : o)));
+      setSelectedOrder(prev => (prev && prev.id === orderId ? { ...prev, status: 'READY' } : prev));
+    });
 
     // Lắng nghe yêu cầu xuất hóa đơn từ khách
     socket.on('request_invoice', ({ orderId, tableId }) => {
@@ -94,7 +108,9 @@ export const WaiterDashboard = () => {
   const handleAcceptOrder = async (orderId: string) => {
     try {
       await waiterApi.acceptOrder(orderId);
-      fetchOrders();
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'ACCEPTED' } : o));
+      setSelectedOrder(prev => (prev && prev.id === orderId ? { ...prev, status: 'ACCEPTED' } : prev));
+      showToast('Đã nhận đơn hàng');
     } catch (error) {
       handleAuthError(error);
     }
@@ -103,7 +119,9 @@ export const WaiterDashboard = () => {
   const handleRejectOrder = async (orderId: string) => {
     try {
       await waiterApi.rejectOrder(orderId);
-      fetchOrders();
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'REJECTED' } : o));
+      setSelectedOrder(prev => (prev && prev.id === orderId ? { ...prev, status: 'REJECTED' } : prev));
+      showToast('Đã từ chối đơn hàng');
     } catch (error) {
       handleAuthError(error);
     }
@@ -112,7 +130,9 @@ export const WaiterDashboard = () => {
   const handleSendToKitchen = async (orderId: string) => {
     try {
       await waiterApi.sendToKitchen(orderId);
-      fetchOrders();
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'PREPARING' } : o));
+      setSelectedOrder(prev => (prev && prev.id === orderId ? { ...prev, status: 'PREPARING' } : prev));
+      showToast('Đã gửi đơn báo bếp');
     } catch (error) {
       handleAuthError(error);
     }
@@ -121,7 +141,9 @@ export const WaiterDashboard = () => {
   const handleServeOrder = async (orderId: string) => {
     try {
       await waiterApi.serveOrder(orderId);
-      fetchOrders();
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'SERVED' } : o));
+      setSelectedOrder(prev => (prev && prev.id === orderId ? { ...prev, status: 'SERVED' } : prev));
+      showToast('Đã phục vụ đơn hàng');
     } catch (error) {
       handleAuthError(error);
     }
@@ -131,6 +153,9 @@ export const WaiterDashboard = () => {
     try {
       await waiterApi.completeOrder(orderId);
       setOrders(prev => prev.filter(o => o.id !== orderId));
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(null);
+      }
       showToast('Đơn hàng đã hoàn thành');
     } catch (error) {
       handleAuthError(error);

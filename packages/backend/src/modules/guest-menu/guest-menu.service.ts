@@ -122,7 +122,7 @@ export class GuestMenuService {
     // Query items using DB Pagination
     let itemQuery = this.menuItemRepo
       .createQueryBuilder('item')
-      .leftJoinAndSelect('item.photos', 'photo')
+      .leftJoinAndSelect('item.photos', 'photos')
       .leftJoinAndSelect('item.modifierGroups', 'modifierGroup')
       .leftJoinAndSelect('modifierGroup.options', 'option')
       .where('item.restaurant_id = :restaurantId', { restaurantId })
@@ -276,7 +276,7 @@ export class GuestMenuService {
     // Get all active menu items (optionally filter by category)
     let itemQuery = this.menuItemRepo
       .createQueryBuilder('item')
-      .leftJoinAndSelect('item.photos', 'photo')
+      .leftJoinAndSelect('item.photos', 'photos')
       .leftJoinAndSelect('item.modifierGroups', 'modifierGroup')
       .leftJoinAndSelect('modifierGroup.options', 'option')
       .where('item.restaurant_id = :restaurantId', { restaurantId })

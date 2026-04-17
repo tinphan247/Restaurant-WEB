@@ -17,7 +17,7 @@ const createOrderId = () =>
   const v = c === 'x' ? r : (r & 0x3) | 0x8;
   return v.toString(16);
 }));
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://restaurant-web-five-wine.vercel.app';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://restaurant-backend-nfov.onrender.com';
 
 export interface GuestMenuItem {
   id: string;

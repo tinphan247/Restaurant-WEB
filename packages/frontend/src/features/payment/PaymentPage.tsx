@@ -29,7 +29,7 @@ export default function PaymentPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { items: cartItems, updateQuantity, removeItem, getItemPrice, clearCart } = useCart();
 
-  const { pay, payWithMomo, loading, MENU_RETURN_KEY, setReturnUrl } = usePayment();
+  const { pay, payWithMomo, loading, error, MENU_RETURN_KEY, setReturnUrl } = usePayment();
 
 
   const {
@@ -59,7 +59,12 @@ export default function PaymentPage() {
 
   const [tab, setTab] = useState<'order' | 'status' | 'history'>('order');
   const successParam = searchParams.get('success');
-  const [showSuccessModal, setShowSuccessModal] = useState(!!successParam);
+  const resultCodeParam = searchParams.get('resultCode');
+  const isMomoSuccess = resultCodeParam === '0';
+  const isGenericSuccess = successParam === 'true';
+  const isPaymentSuccess = isGenericSuccess || isMomoSuccess;
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const returnUrlRef = useRef<string>('/menu');
 
   const getReturnUrl = () => {
@@ -79,10 +84,12 @@ export default function PaymentPage() {
   }, [setReturnUrl]);
 
   useEffect(() => {
-    if (successParam) {
+    if (isPaymentSuccess) {
       setShowSuccessModal(true);
+      setTab('status');
+      clearCart();
     }
-  }, [successParam]);
+  }, [isPaymentSuccess, clearCart]);
 
   useEffect(() => {
     if (!successParam) return;
@@ -103,7 +110,7 @@ export default function PaymentPage() {
   }, [successParam, navigate, MENU_RETURN_KEY]);
 
   useEffect(() => {
-    if (successParam) {
+    if (isPaymentSuccess) {
       const timer = setTimeout(() => {
         // Clean URL params after we show modal
         window.history.replaceState({}, '', '/payment');
@@ -111,7 +118,7 @@ export default function PaymentPage() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [successParam, setSearchParams]);
+  }, [isPaymentSuccess, setSearchParams]);
 
   // Helper function to format modifiers
   const formatModifiers = (item: CartItem): string[] => {
@@ -142,6 +149,14 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center">
+      {/* Error Alert */}
+      {error && (
+        <div className="fixed top-4 left-4 right-4 z-[100] bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg shadow-lg flex items-center justify-between">
+          <span className="text-sm font-medium">{error}</span>
+          <button onClick={() => window.location.reload()} className="text-xs bg-red-600 text-white px-2 py-1 rounded">Thử lại</button>
+        </div>
+      )}
+
       {showSuccessModal && (
         <PaymentSuccessModal
           onClose={() => {
@@ -388,8 +403,7 @@ export default function PaymentPage() {
                         const orderResponse = await orderApi.create(orderPayload);
                         console.log('Order created:', orderResponse);
 
-                        clearCart(); // Reset cart before redirecting
-                        payWithMomo(resolvedOrderId, grandTotal);
+                        await payWithMomo(resolvedOrderId, grandTotal);
                       } catch (err: any) {
                         console.error('Order creation error:', err);
                         alert(`Lỗi tạo đơn hàng: ${err.message || 'Unknown code'}`);

@@ -26,6 +26,7 @@ export class MenuItemsService {
 
     const qb = this.menuItemRepo
       .createQueryBuilder('item')
+      .leftJoinAndSelect('item.photos', 'photos')
       .where('item.restaurant_id = :restaurantId', { restaurantId })
       .andWhere('item.is_deleted = :isDeleted', { isDeleted: false });
 
@@ -88,7 +89,7 @@ export class MenuItemsService {
     });
 
     const saved = await this.menuItemRepo.save(item);
-    return this.toMenuItemResponse(saved);
+    return this.findOne(restaurantId, saved.id);
   }
 
   async findOne(restaurantId: string, id: string): Promise<MenuItemEntity> {
@@ -136,7 +137,7 @@ export class MenuItemsService {
 
     const saved = await this.menuItemRepo.save(item);
 
-    return this.toMenuItemResponse(saved);
+    return this.findOne(restaurantId, saved.id);
   }
 
   async updateStatus(
@@ -151,7 +152,7 @@ export class MenuItemsService {
 
     item.status = status;
     const saved = await this.menuItemRepo.save(item);
-    return this.toMenuItemResponse(saved);
+    return this.findOne(restaurantId, saved.id);
   }
 
   async remove(restaurantId: string, id: string): Promise<void> {

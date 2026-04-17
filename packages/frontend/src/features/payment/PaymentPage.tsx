@@ -1,7 +1,6 @@
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Minus, Trash2, Banknote, Smartphone } from 'lucide-react';
-import PaymentSuccessModal from './components/PaymentSuccessModal';
 import { usePayment } from './hooks/usePayment';
 import { useCart } from '../../contexts/CartContext';
 import type { CartItem } from '../../contexts/CartContext';
@@ -63,8 +62,6 @@ export default function PaymentPage() {
   const isMomoSuccess = resultCodeParam === '0';
   const isGenericSuccess = successParam === 'true';
   const isPaymentSuccess = isGenericSuccess || isMomoSuccess;
-
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const returnUrlRef = useRef<string>('/menu');
 
   const getReturnUrl = () => {
@@ -83,31 +80,13 @@ export default function PaymentPage() {
     returnUrlRef.current = getReturnUrl();
   }, [setReturnUrl]);
 
+  // Auto-switch to status tab on success
   useEffect(() => {
     if (isPaymentSuccess) {
-      setShowSuccessModal(true);
       setTab('status');
       clearCart();
     }
   }, [isPaymentSuccess, clearCart]);
-
-  useEffect(() => {
-    if (!successParam) return;
-
-    const timer = setTimeout(() => {
-      // Try close current tab (works if opened by script); then navigate back to saved menu URL
-      const lastUrl = getReturnUrl();
-      returnUrlRef.current = lastUrl;
-
-      if (window.close) {
-        window.close();
-      }
-
-      navigate(lastUrl, { replace: true });
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [successParam, navigate, MENU_RETURN_KEY]);
 
   useEffect(() => {
     if (isPaymentSuccess) {
@@ -157,14 +136,7 @@ export default function PaymentPage() {
         </div>
       )}
 
-      {showSuccessModal && (
-        <PaymentSuccessModal
-          onClose={() => {
-            setShowSuccessModal(false);
-            navigate(returnUrlRef.current, { replace: true });
-          }}
-        />
-      )}
+      {/* Removed Success Modal as per request */}
       <div className="w-full max-w-[420px] bg-white shadow-lg flex flex-col min-h-screen md:rounded-xl md:my-8 relative">
 
         {/* HEADER */}

@@ -210,7 +210,7 @@ export class MenuItemsService {
   }
 
   private toMenuItemResponse(item: MenuItemEntity): any {
-    const primary = item.photos?.find(p => p.isPrimary);
+    const primary = item.photos?.find(p => p.isPrimary) || item.photos?.[0];
 
     return {
       ...item,

@@ -200,8 +200,8 @@ export class GuestMenuService {
    * Calculate primaryPhotoUrl, format modifierGroups
    */
   private transformMenuItem(item: MenuItemEntity): any {
-    // Tìm primary photo
-    const primaryPhoto = item.photos?.find(p => p.isPrimary);
+    // Tìm primary photo (fallback lấy ảnh đầu tiên nếu không có cái nào là primary)
+    const primaryPhoto = item.photos?.find(p => p.isPrimary) || item.photos?.[0];
     const primaryPhotoUrl = primaryPhoto?.url || null;
 
     // Format modifier groups (chỉ lấy active groups và options)
